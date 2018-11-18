@@ -3,6 +3,7 @@
 PointPainter::PointPainter()
 {
   num_geoms_=0;
+  //sizeof(PointPainter::Data)
 }
 
 PointPainter::~PointPainter() {

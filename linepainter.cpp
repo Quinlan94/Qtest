@@ -83,7 +83,7 @@ void LinePainter::Render(const QMatrix4x4& pmv_matrix, const int width,
   shader_program_.setUniformValue("u_line_width", line_width);
 
   glDrawArrays(GL_LINES, 0, (GLsizei)(2 * num_geoms_));
-  qDebug()<<"line";
+
 
 
   // Make sure the VAO is not changed from the outside

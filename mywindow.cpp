@@ -1,7 +1,7 @@
 ﻿#include "mywindow.h"
 #include <QDebug>
 #include <iostream>
-#include <gl/glut.h>
+//#include <gl/glut.h>
 
 #define POINT_SELECTED_R 0
 #define POINT_SELECTED_G 1
@@ -150,7 +150,7 @@ mywindow::mywindow(QWidget *parent, QScreen *screen)
     bg_color_[0] = 1.0f;
     bg_color_[1] = 1.0f;
     bg_color_[2] = 1.0f;
-    texture = 0;
+    //texture = 0;
     //setFlags(Qt::Widget);
     SetupGL();
     ResizeGL();
@@ -208,7 +208,7 @@ void mywindow::ResizeGL()
 
 void mywindow::PaintGL()
 {
-    qDebug()<<isExposed();
+    //qDebug()<<isExposed();
     if (!isExposed()) {
        return;
      }
@@ -219,23 +219,23 @@ void mywindow::PaintGL()
      glClearColor(bg_color_[0], bg_color_[1], bg_color_[2], 1.0f);
      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
      GLfloat mat_specular[] = { 1.0, 1.0, 1.0, 1.0 };  //镜面反射参数
-        GLfloat mat_shininess[] = { 50.0 };               //高光指数
-        GLfloat light_position[] = { 1.0, 1.0, 1.0, 0.0 };
-        GLfloat white_light[] = { 1.0, 1.0, 1.0, 1.0 };   //灯位置(1,1,1), 最后1-开关
-        GLfloat Light_Model_Ambient[] = { 0.2, 0.2, 0.2, 1.0 }; //环境光参数
+     GLfloat mat_shininess[] = { 50.0 };               //高光指数
+     GLfloat light_position[] = { 1.0, 1.0, 1.0, 0.0 };
+     GLfloat white_light[] = { 1.0, 1.0, 1.0, 1.0 };   //灯位置(1,1,1), 最后1-开关
+     GLfloat Light_Model_Ambient[] = { 0.2, 0.2, 0.2, 1.0 }; //环境光参数
 
-         glShadeModel(GL_SMOOTH);
-         glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
-             glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+//     glShadeModel(GL_SMOOTH);
+//     glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+//             glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
 
-             //灯光设置
-             glLightfv(GL_LIGHT0, GL_POSITION, light_position);
-             glLightfv(GL_LIGHT0, GL_DIFFUSE, white_light);   //散射光属性
-             glLightfv(GL_LIGHT0, GL_SPECULAR, white_light);  //镜面反射光
-             glLightModelfv(GL_LIGHT_MODEL_AMBIENT, Light_Model_Ambient);  //环境光参数
+//             //灯光设置
+//             glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+//             glLightfv(GL_LIGHT0, GL_DIFFUSE, white_light);   //散射光属性
+//             glLightfv(GL_LIGHT0, GL_SPECULAR, white_light);  //镜面反射光
+//             glLightModelfv(GL_LIGHT_MODEL_AMBIENT, Light_Model_Ambient);  //环境光参数
 
-             glEnable(GL_LIGHTING);   //开关:使用光
-             glEnable(GL_LIGHT0);     //打开0#灯
+//             glEnable(GL_LIGHTING);   //开关:使用光
+//             glEnable(GL_LIGHT0);     //打开0#灯
 
 
 
@@ -272,14 +272,14 @@ void mywindow::PaintGL()
      point_connection_painter_.Render(pmv_matrix, width(), height(), 1);
 
      // Images
-     image_line_painter_.Render(pmv_matrix, width(), height(), 1);
-     image_triangle_painter_.Render(pmv_matrix);
-     image_connection_painter_.Render(pmv_matrix, width(), height(), 1);
+//     image_line_painter_.Render(pmv_matrix, width(), height(), 1);
+//     image_triangle_painter_.Render(pmv_matrix);
+//     image_connection_painter_.Render(pmv_matrix, width(), height(), 1);
 
      // Movie grabber cameras
-     texture->bind();
-     movie_grabber_path_painter_.Render(pmv_matrix, width(), height(), 1.5);
-     movie_grabber_line_painter_.Render(pmv_matrix, width(), height(), 1);
+     //texture->bind();
+     //movie_grabber_path_painter_.Render(pmv_matrix, width(), height(), 1.5);
+     //movie_grabber_line_painter_.Render(pmv_matrix, width(), height(), 1);
      movie_grabber_triangle_painter_.Render(pmv_matrix);
 
      context_->swapBuffers(this);
@@ -288,15 +288,17 @@ void mywindow::PaintGL()
 void mywindow::initTextures()
 {
 
-    texture = new QOpenGLTexture(QImage("D://scene_dense_mesh_texture.png").mirrored());
+    //texture = new QOpenGLTexture(QImage("C:/Users/zou/Desktop/openProject/Qtest/scene_dense_mesh_texture.png").mirrored());
 
 
-    if(texture != NULL)
-        qDebug("wrong image");
-    texture->setMinificationFilter(QOpenGLTexture::Nearest);
+//    if(texture != NULL)
+//        qDebug("success image");
+//    texture->setMinificationFilter(QOpenGLTexture::Nearest);
 
 
-    texture->setMagnificationFilter(QOpenGLTexture::Linear);
+//    texture->setMagnificationFilter(QOpenGLTexture::Linear);
+
+//       texture->setWrapMode(QOpenGLTexture::Repeat);
 
 }
 
@@ -323,6 +325,14 @@ void mywindow::UploadMeshData()
 
          triangle.point3 = PointPainter::Data(_Points[_Vertices[i](2)](0)  , _Points[_Vertices[i](2)](1), _Points[_Vertices[i](2)](2),
                  _Points[_Vertices[i](2)](3),_Points[_Vertices[i](2)](4),_Points[_Vertices[i](2)](5), _Textures[i](4),_Textures[i](5));
+
+         if(i==_Vertices.size()-1)
+         {
+             qDebug()<<"point coordinate"<<_Points[_Vertices[i](0)](0)  , _Points[_Vertices[i](0)](1), _Points[_Vertices[i](0)](2);
+             qDebug()<<"list"<<_Vertices[i](0)<<" "<<_Vertices[i](1)
+                                  <<" "<<_Vertices[i](2)<<" "<<_Textures[i](0)<<" "<<_Textures[i](1)<<_Textures[i](2)<<" "<<_Textures[i](3)
+                                                                                                                       <<_Textures[i](4)<<" "<<_Textures[i](5);
+         }
 
 //         triangle.point2 = PointPainter::Data(_Points[_Vertices[i](1)](0)  , _Points[_Vertices[i](1)](1), _Points[_Vertices[i](1)](2), GRID_RGBA);
 //         triangle.point3 = PointPainter::Data(_Points[_Vertices[i](2)](0)  , _Points[_Vertices[i](2)](1), _Points[_Vertices[i](2)](2), GRID_RGBA);
@@ -405,6 +415,7 @@ void mywindow::InitializeSettings()
 
     glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);//这样在Shader中可以访问glPointSize;
                          //如果启用，并且顶点着色器处于活动状态，则派生的点大小将从（可能被剪切的）着色器内置的gl_PointSize中获取，并被钳位到实现相关的点大小范围。
+    glEnable(GL_TEXTURE_2D);
 
 
 }

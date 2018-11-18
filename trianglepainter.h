@@ -27,6 +27,8 @@ public:
      void Upload(const std::vector<TrianglePainter::Data>& data);
      void Render(const QMatrix4x4& pmv_matrix);
 
+     QOpenGLTexture *texture_tri;
+
     private:
      QOpenGLShaderProgram shader_program_;
      QOpenGLVertexArrayObject vao_;

@@ -3,6 +3,7 @@
 
 #include <QtCore>
 #include <QtOpenGL>
+#include <GL/freeglut.h>
 
 
 
@@ -20,7 +21,7 @@ public:
             : x(x_), y(y_), z(z_), r(r_), g(g_), b(b_), a(a_) {}
         Data(const float x_, const float y_, const float z_, const float _nx,
              const float _ny, const float _nz, const float _tx,const float _ty)
-            : x(x_), y(y_), z(z_), nx(_nx), ny(_ny), nz(_nz), tx(_tx),ty(_ty) {}
+            : x(x_), y(y_), z(z_),r(0),g(0), b(0), a(0), nx(_nx), ny(_ny), nz(_nz), tx(_tx),ty(_ty) {}
 
         float x, y, z;
         float r, g, b, a;

@@ -7,6 +7,9 @@
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 #include <boost/algorithm/string.hpp>
+#include <QOpenGLFunctions>
+#include <QOpenGLShaderProgram>
+#include <QOpenGLBuffer>
 
 #include "linepainter.h"
 #include "pointpainter.h"
@@ -68,7 +71,7 @@ public:
     void printMatrix(QMatrix4x4 matrix);
     void printMatrix(Eigen::Matrix4f matrix);
 
-    QOpenGLTexture *texture;
+    //QOpenGLTexture *texture;
 
 //    EIGEN_STL_UMAP(colmap::camera_t, colmap::Camera) cameras;
 //    EIGEN_STL_UMAP(colmap::image_t, colmap::Image) images;

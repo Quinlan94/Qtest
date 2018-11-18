@@ -65,6 +65,12 @@ void MainWindow::Import()
     int NX_index = -1;
     int NY_index = -1;
     int NZ_index = -1;
+    int T1_X_index = 5;
+    int T1_Y_index = 6;
+    int T2_X_index = 7;
+    int T2_Y_index = 8;
+    int T3_X_index = 9;
+    int T3_Y_index = 10;
     int R_index = -1;
     int G_index = -1;
     int B_index = -1;
@@ -169,19 +175,22 @@ void MainWindow::Import()
        if (line_elems.size() > 8)
        {
             qDebug()<<"line_elems.size() "<<line_elems.size();
+
             Eigen::Vector3i vertice;
+
             vertice(0) = std::stoi(line_elems.at(1));
             vertice(1) = std::stoi(line_elems.at(2));
             vertice(2) = std::stoi(line_elems.at(3));
 
             Eigen::Vector6f texture;
 
-            texture(0) = std::stof(line_elems.at(6));
-            texture(1) = std::stof(line_elems.at(7));
-            texture(2) = std::stof(line_elems.at(8));
-            texture(3) = std::stof(line_elems.at(9));
-            texture(4) = std::stof(line_elems.at(10));
-            texture(5) = std::stof(line_elems.at(11));
+
+            texture(0) = std::stof(line_elems.at(T1_X_index));
+            texture(1) = std::stof(line_elems.at(T1_Y_index));
+            texture(2) = std::stof(line_elems.at(T2_X_index));
+            texture(3) = std::stof(line_elems.at(T2_Y_index));
+            texture(4) = std::stof(line_elems.at(T3_X_index));
+            texture(5) = std::stof(line_elems.at(T3_Y_index));
 
             qDebug()<<"texture "<<texture(5);
 
@@ -256,12 +265,12 @@ void MainWindow::Import()
 
         Eigen::Vector6f texture;
 
-        texture(0) = std::stof(items.at(6));
-        texture(1) = std::stof(items.at(7));
-        texture(2) = std::stof(items.at(8));
-        texture(3) = std::stof(items.at(9));
-        texture(4) = std::stof(items.at(10));
-        texture(5) = std::stof(items.at(11));
+        texture(0) = std::stof(items.at(T1_X_index));
+        texture(1) = std::stof(items.at(T1_Y_index));
+        texture(2) = std::stof(items.at(T2_X_index));
+        texture(3) = std::stof(items.at(T2_Y_index));
+        texture(4) = std::stof(items.at(T3_X_index));
+        texture(5) = std::stof(items.at(T3_Y_index));
 
 
         vertices.push_back(vertice);

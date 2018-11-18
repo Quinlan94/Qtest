@@ -1,6 +1,6 @@
 ﻿#include "mainwindow.h"
 #include <QApplication>
-#include <myglwidget.h>
+
 #include <mywindow.h>
 
 int main(int argc, char *argv[])
