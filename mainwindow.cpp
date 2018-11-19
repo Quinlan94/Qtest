@@ -6,6 +6,7 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
+    opengl = new mywindow(this);
 
       action_project_new_ =
           new QAction(QIcon(":/media/project-new.png"), tr("导入文件"), this);
@@ -16,8 +17,8 @@ MainWindow::MainWindow(QWidget *parent)
       action_project_open_ =
           new QAction(QIcon(":/media/project-open.png"), tr("抓取动画"), this);
       action_project_open_->setShortcuts(QKeySequence::Open);
-      connect(action_project_open_, &QAction::triggered, this,
-              &MainWindow::GrabMovies);
+      connect(action_project_open_, &QAction::triggered, opengl,
+              &mywindow::GrabMovies);
 
        file_menu=menuBar()->addMenu(tr("选项"));
 
@@ -25,7 +26,7 @@ MainWindow::MainWindow(QWidget *parent)
        file_menu->addAction(action_project_open_);
 
 
-       opengl = new mywindow(this);
+
        setCentralWidget(QWidget::createWindowContainer(opengl, this,
                                                      Qt::MSWindowsOwnDC));
 //    opengl->isVisible();
@@ -65,12 +66,12 @@ void MainWindow::Import()
     int NX_index = -1;
     int NY_index = -1;
     int NZ_index = -1;
-    int T1_X_index = 5;
-    int T1_Y_index = 6;
-    int T2_X_index = 7;
-    int T2_Y_index = 8;
-    int T3_X_index = 9;
-    int T3_Y_index = 10;
+    int T1_X_index = 6;
+    int T1_Y_index = 7;
+    int T2_X_index = 8;
+    int T2_Y_index = 9;
+    int T3_X_index = 10;
+    int T3_Y_index = 11;
     int R_index = -1;
     int G_index = -1;
     int B_index = -1;
@@ -289,6 +290,8 @@ void MainWindow::Import()
 void MainWindow::GrabMovies()
 {
 
+
+  //opengl->movie_grabber_widget_->show();
 }
 
 void MainWindow::StringTrim(std::string *str)

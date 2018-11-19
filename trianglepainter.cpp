@@ -29,14 +29,13 @@ void TrianglePainter::Setup() {
   shader_program_.link();
   shader_program_.bind();
 
-  texture_tri = new QOpenGLTexture(QImage("C:/Users/zou/Desktop/openProject/Qtest/scene_dense_mesh_texture.png").mirrored());
+  texture_tri = new QOpenGLTexture(QImage("D:/scene_dense_mesh_texture.png").mirrored());
   texture_tri->setMinificationFilter(QOpenGLTexture::Nearest);
 
-  // Set bilinear filtering mode for texture magnification
+
   texture_tri->setMagnificationFilter(QOpenGLTexture::Linear);
 
-  // Wrap texture coordinates by repeating
-  // f.ex. texture coordinate (1.1, 1.2) is same as (0.1, 0.2)
+
   texture_tri->setWrapMode(QOpenGLTexture::Repeat);
 
 
@@ -78,6 +77,7 @@ void TrianglePainter::Upload(const std::vector<TrianglePainter::Data>& data) {
   shader_program_.enableAttributeArray(2);
   shader_program_.setAttributeBuffer(2, GL_FLOAT, 10 * sizeof(GLfloat), 2,
                                      sizeof(PointPainter::Data));
+  //着色器语句，有几个in，就必须几个out，还要在主函数里赋值！！！！holy shit
 
 
   vbo_.release();

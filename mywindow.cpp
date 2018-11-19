@@ -150,6 +150,8 @@ mywindow::mywindow(QWidget *parent, QScreen *screen)
     bg_color_[0] = 1.0f;
     bg_color_[1] = 1.0f;
     bg_color_[2] = 1.0f;
+
+    movie_grabber_widget_ = new MovieWidget(parent,this);
     //texture = 0;
     //setFlags(Qt::Widget);
     SetupGL();
@@ -302,6 +304,26 @@ void mywindow::initTextures()
 
 }
 
+float mywindow::PointSize() const
+{
+    return point_size_;
+}
+
+float mywindow::ImageSize() const
+{
+    return image_size_;
+}
+
+void mywindow::SetPointSize(const float point_size)
+{
+
+}
+
+void mywindow::SetImageSize(const float image_size)
+{
+
+}
+
 void mywindow::Upload()
 {
 
@@ -330,8 +352,10 @@ void mywindow::UploadMeshData()
          {
              qDebug()<<"point coordinate"<<_Points[_Vertices[i](0)](0)  , _Points[_Vertices[i](0)](1), _Points[_Vertices[i](0)](2);
              qDebug()<<"list"<<_Vertices[i](0)<<" "<<_Vertices[i](1)
-                                  <<" "<<_Vertices[i](2)<<" "<<_Textures[i](0)<<" "<<_Textures[i](1)<<_Textures[i](2)<<" "<<_Textures[i](3)
-                                                                                                                       <<_Textures[i](4)<<" "<<_Textures[i](5);
+                                  <<" "<<_Vertices[i](2)<<" "<<_Textures[i](0)<<" "<<_Textures[i](1)<<_Textures[i](2)<<" "<<_Textures[i](3) <<_Textures[i](4)<<" "<<_Textures[i](5);
+             qDebug()<<"triang ..."<<triangle.point1.x<<" "<<triangle.point1.y<<triangle.point1.z<<triangle.point1.tx<<" "<<triangle.point1.ty;
+              qDebug()<<"triang ..."<<triangle.point2.x<<" "<<triangle.point2.y<<triangle.point2.z<<triangle.point2.tx<<" "<<triangle.point2.ty;
+               qDebug()<<"triang ..."<<triangle.point3.x<<" "<<triangle.point3.y<<triangle.point3.z<<triangle.point3.tx<<" "<<triangle.point3.ty;
          }
 
 //         triangle.point2 = PointPainter::Data(_Points[_Vertices[i](1)](0)  , _Points[_Vertices[i](1)](1), _Points[_Vertices[i](1)](2), GRID_RGBA);
@@ -367,6 +391,48 @@ void mywindow::printMatrix(QMatrix4x4 matrix)
 
     }
     cout<<"====================="<<endl;
+}
+
+void mywindow::SetModelViewMatrix(const QMatrix4x4 &matrix)
+{
+    model_view_matrix_ = matrix;
+    PaintGL();
+}
+
+QImage mywindow::GrabImage()
+{
+     DisableCoordinateGrid();
+
+     const int scaled_width = static_cast<int>(devicePixelRatio() * width());
+     const int scaled_height = static_cast<int>(devicePixelRatio() * height());
+
+     QImage image(scaled_width, scaled_height, QImage::Format_ARGB32);
+     glReadPixels(0, 0, scaled_width, scaled_height, GL_RGBA, GL_UNSIGNED_BYTE,
+                  image.bits());
+
+     FrameBufferToQImage(image);
+
+     EnableCoordinateGrid();
+
+     return image;
+}
+
+void mywindow::GrabMovies()
+{
+    movie_grabber_widget_->show();
+}
+
+void mywindow::EnableCoordinateGrid()
+{
+    coordinate_grid_enabled_ = true;
+    PaintGL();
+}
+
+void mywindow::DisableCoordinateGrid()
+{
+
+    coordinate_grid_enabled_ = false;
+    PaintGL();
 }
 
 void mywindow::exposeEvent(QExposeEvent *event)
@@ -623,6 +689,11 @@ void mywindow::TranslateView(const float x, const float y, const float prev_x, c
       PaintGL();
 }
 
+QMatrix4x4 mywindow::ModelViewMatrix() const
+{
+    return model_view_matrix_;
+}
+
 void mywindow::UploadCoordinateGridData()
 {
     const float scale = ZoomScale();
@@ -655,6 +726,32 @@ void mywindow::UploadCoordinateGridData()
      axes_data[2].point2 = PointPainter::Data(0, 0, 50 * scale, Z_AXIS_RGBA);
 
      coordinate_axes_painter_.Upload(axes_data);
+
+
+//     std::vector<TrianglePainter::Data> triangle_data_all;
+//     //qDebug()<<"_Vertices.size()"<<_Vertices.size();
+//     //for(int i =0;i<2;i++)
+//     {
+//         TrianglePainter::Data triangle,triangle_1;
+//         triangle.point1 = PointPainter::Data(-0.5,-0.5,-0.5,0,0,0,0,0.5);
+//         triangle.point2 = PointPainter::Data(0.5,-0.5,-0.5,0,0,0,0.33,0.5);
+//         triangle.point3 = PointPainter::Data(0.5,0.5,-0.5,0,0,0,0.33,1);
+
+//         triangle_1.point1 = PointPainter::Data(0.5,0.5,-0.5,0,0,0,0.33,1);
+//         triangle_1.point2 = PointPainter::Data(-0.5,0.5,-0.5,0,0,0,0,1);
+//         triangle_1.point3 = PointPainter::Data(-0.5,-0.5,-0.5,0,0,0,0,0.5);
+
+
+
+////         triangle.point2 = PointPainter::Data(_Points[_Vertices[i](1)](0)  , _Points[_Vertices[i](1)](1), _Points[_Vertices[i](1)](2), GRID_RGBA);
+////         triangle.point3 = PointPainter::Data(_Points[_Vertices[i](2)](0)  , _Points[_Vertices[i](2)](1), _Points[_Vertices[i](2)](2), GRID_RGBA);
+//         triangle_data_all.push_back(triangle);
+//          triangle_data_all.push_back(triangle_1);
+
+
+//     }
+//     movie_grabber_triangle_painter_.Upload(triangle_data_all);
+
 }
 
 
@@ -670,6 +767,92 @@ void mywindow::UploadImageData(const bool selection_mode)
 //      std::vector<TrianglePainter::Data> triangle_data;
 //      triangle_data.reserve(2 * reg_image_ids.size());
 
+}
+
+void mywindow::UploadMovieGrabberData()
+{
+    /*
+    std::vector<LinePainter::Data> path_data;
+      path_data.reserve(movie_grabber_widget_->views.size());
+
+      std::vector<LinePainter::Data> line_data;
+      line_data.reserve(4 * movie_grabber_widget_->views.size());
+
+      std::vector<TrianglePainter::Data> triangle_data;
+      triangle_data.reserve(2 * movie_grabber_widget_->views.size());
+
+      if (movie_grabber_widget_->views.size() > 0) {
+        const Image& image0 = movie_grabber_widget_->views[0];
+        Eigen::Vector3f prev_proj_center = image0.ProjectionCenter().cast<float>();
+
+        for (size_t i = 1; i < movie_grabber_widget_->views.size(); ++i) {
+          const Image& image = movie_grabber_widget_->views[i];
+          const Eigen::Vector3f curr_proj_center =
+              image.ProjectionCenter().cast<float>();
+          LinePainter::Data path;
+          path.point1 = PointPainter::Data(prev_proj_center(0), prev_proj_center(1),
+                                           prev_proj_center(2), 0, 1, 1, 0.8);
+          path.point2 = PointPainter::Data(curr_proj_center(0), curr_proj_center(1),
+                                           curr_proj_center(2), 0, 1, 1, 0.8);
+          path_data.push_back(path);
+          prev_proj_center = curr_proj_center;
+        }
+
+        // Setup dummy camera with same settings as current OpenGL viewpoint.
+        const size_t kDefaultImageWdith = 2048;
+        const size_t kDefaultImageHeight = 1536;
+        const double focal_length =
+            -2 * tan(DegToRad(kFieldOfView) / 2.0) * kDefaultImageWdith;
+//        Camera camera;
+//        camera.InitializeWithId(SimplePinholeCameraModel::model_id, focal_length,
+//                                kDefaultImageWdith, kDefaultImageHeight);
+
+        // Build all camera models
+        for (size_t i = 0; i < movie_grabber_widget_->views.size(); ++i) {
+          const Image& image = movie_grabber_widget_->views[i];
+          float r, g, b, a;
+          if (i == selected_movie_grabber_view_) {
+            r = IMAGE_SELECTED_R;
+            g = IMAGE_SELECTED_G;
+            b = IMAGE_SELECTED_B;
+            a = 1;
+          } else {
+            r = 0;
+            g = 1;
+            b = 1;
+            a = IMAGE_A;
+          }
+
+          LinePainter::Data line1, line2, line3, line4, line5, line6, line7, line8;
+          TrianglePainter::Data triangle1, triangle2;
+//          BuildImageModel(image, camera, image_size_, r, g, b, a, line1, line2,
+//                          line3, line4, line5, line6, line7, line8, triangle1,
+//                          triangle2);
+
+          line_data.push_back(line1);
+          line_data.push_back(line2);
+          line_data.push_back(line3);
+          line_data.push_back(line4);
+          line_data.push_back(line5);
+          line_data.push_back(line6);
+          line_data.push_back(line7);
+          line_data.push_back(line8);
+
+          triangle_data.push_back(triangle1);
+          triangle_data.push_back(triangle2);
+        }
+      }
+
+      movie_grabber_path_painter_.Upload(path_data);
+      movie_grabber_line_painter_.Upload(line_data);
+      movie_grabber_triangle_painter_.Upload(triangle_data);
+      */
+}
+
+void mywindow::UpdateMovieGrabber()
+{
+    UploadMovieGrabberData();
+    PaintGL();
 }
 
 void mywindow::ComposeProjectionMatrix()

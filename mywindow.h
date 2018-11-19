@@ -11,6 +11,8 @@
 #include <QOpenGLShaderProgram>
 #include <QOpenGLBuffer>
 
+#include "moviewidget.h"
+
 #include "linepainter.h"
 #include "pointpainter.h"
 #include "trianglepainter.h"
@@ -63,13 +65,34 @@ public:
 
     void initTextures();
 
+    float PointSize() const;
+    float ImageSize() const;
+
+    void SetPointSize(const float point_size);
+    void SetImageSize(const float image_size);
+
     void Update();
     void Upload();
     void UploadMeshData();
     void Clear();
 
+    void ChangeFocusDistance(const float delta);
+    void ChangeNearPlane(const float delta);
+    void ChangePointSize(const float delta);
+    void ChangeCameraSize(const float delta);
+
     void printMatrix(QMatrix4x4 matrix);
     void printMatrix(Eigen::Matrix4f matrix);
+     void SetModelViewMatrix(const QMatrix4x4& matrix);
+     void UpdateMovieGrabber();
+
+      QImage GrabImage();
+      void GrabMovies();
+
+      void EnableCoordinateGrid();
+      void DisableCoordinateGrid();
+       QMatrix4x4 ModelViewMatrix() const;
+
 
     //QOpenGLTexture *texture;
 
@@ -95,6 +118,9 @@ protected:
 private:
     QOpenGLContext* context_;
 
+    MovieWidget* movie_grabber_widget_;
+
+
     bool coordinate_grid_enabled_;
 
     void InitializePainters();
@@ -106,10 +132,7 @@ private:
     void mouseMoveEvent(QMouseEvent* event);
     void wheelEvent(QWheelEvent* event);
 
-    void ChangeFocusDistance(const float delta);
-    void ChangeNearPlane(const float delta);
-    void ChangePointSize(const float delta);
-    void ChangeCameraSize(const float delta);
+
 
     void SelectObject(const int x, const int y);
 
@@ -121,12 +144,16 @@ private:
 
     void ResetView();
 
+
+
     void UploadCoordinateGridData();
     void UploadPointData(const bool selection_mode = false);
     void UploadPointConnectionData();
     void UploadImageData(const bool selection_mode = false);
     void UploadImageConnectionData();
     void UploadMovieGrabberData();
+
+
 
      void ComposeProjectionMatrix();
 
@@ -153,7 +180,6 @@ private:
 
 
     float bg_color_[3];
-
     std::vector<std::pair<size_t, char>> selection_buffer_;
 
 
