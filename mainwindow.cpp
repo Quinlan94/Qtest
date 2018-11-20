@@ -6,7 +6,7 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    opengl = new mywindow(this);
+      opengl = new mywindow(this);
 
       action_project_new_ =
           new QAction(QIcon(":/media/project-new.png"), tr("导入文件"), this);
@@ -14,16 +14,22 @@ MainWindow::MainWindow(QWidget *parent)
       connect(action_project_new_, &QAction::triggered, this,
               &MainWindow::Import);
 
-      action_project_open_ =
+      action_grab_movie_ =
           new QAction(QIcon(":/media/project-open.png"), tr("抓取动画"), this);
-      action_project_open_->setShortcuts(QKeySequence::Open);
-      connect(action_project_open_, &QAction::triggered, opengl,
+      action_grab_movie_->setShortcuts(QKeySequence::Open);
+      connect(action_grab_movie_, &QAction::triggered, opengl,
               &mywindow::GrabMovies);
+      action_reset_ =
+              new QAction(QIcon(":/media/project-open.png"), tr("显示开关"), this);
+          action_reset_->setShortcuts(QKeySequence::Delete);
+          connect(action_reset_, &QAction::triggered, opengl,
+                  &mywindow::Clear);
 
        file_menu=menuBar()->addMenu(tr("选项"));
 
        file_menu->addAction(action_project_new_);
-       file_menu->addAction(action_project_open_);
+       file_menu->addAction(action_grab_movie_);
+       file_menu->addAction(action_reset_);
 
 
 
@@ -52,14 +58,22 @@ void MainWindow::Import()
               .toUtf8()
               .constData();
 
+    opengl->texture_name = path.substr(0,path.length()-3)+"png";
+    QFileInfo file_exist(QString::fromStdString(opengl->texture_name));
 
-      if (path == "") {
+
+
+    opengl->initTextures();
+
+      if (path == ""||(!(file_exist.isFile())))
+      {
+        QMessageBox::warning(NULL, "error", "no such file in dir ", QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
         return;
       }
-      std::ifstream file(path, std::ios::binary);
-      std::string line;
-      bool in_vertex_section = false;
-      bool in_face_section = false;
+    std::ifstream file(path, std::ios::binary);
+    std::string line;
+    bool in_vertex_section = false;
+    bool in_face_section = false;
     int X_index = -1;
     int Y_index = -1;
     int Z_index = -1;
@@ -84,6 +98,9 @@ void MainWindow::Import()
     size_t num_bytes_per_line = 0;
     size_t num_vertices = 0;
     int index = 0;
+
+    QTime time;
+    time.start();
   while (std::getline(file, line))
   {
     StringTrim(&line);
@@ -278,6 +295,7 @@ void MainWindow::Import()
         textures.push_back(texture);
 
    }
+qDebug()<<time.elapsed()/1000.0<<"s";
 
    opengl->_Vertices = vertices;
    opengl->_Textures = textures;
@@ -291,7 +309,12 @@ void MainWindow::GrabMovies()
 {
 
 
-  //opengl->movie_grabber_widget_->show();
+    //opengl->movie_grabber_widget_->show();
+}
+
+void MainWindow::Reset()
+{
+
 }
 
 void MainWindow::StringTrim(std::string *str)

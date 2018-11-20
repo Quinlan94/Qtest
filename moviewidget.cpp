@@ -163,12 +163,7 @@ void MovieWidget::Delete()
 
 void MovieWidget::Clear()
 {
-//     view_data_.clear();
-//      while (table_->rowCount() > 0) {
-//        table_->removeRow(0);
-//      }
-//      views.clear();
-//      opengl_window_->UpdateMovieGrabber();
+
 }
 void MovieWidget::Assemble() {
   if (table_->rowCount() < 2) {
@@ -177,12 +172,6 @@ void MovieWidget::Assemble() {
     return;
   }
 
-//  if (opengl_window_->GetProjectionType() !=
-//      RenderOptions::ProjectionType::PERSPECTIVE) {
-//    QMessageBox::critical(this, tr("Error"),
-//                          tr("You must use perspective projection."));
-//    return;
-//  }
 
   const QString path = QFileDialog::getExistingDirectory(
       this, tr("Choose destination..."), "", QFileDialog::ShowDirsOnly);

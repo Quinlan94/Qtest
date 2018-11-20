@@ -4,14 +4,14 @@
 TrianglePainter::TrianglePainter(): num_geoms_(0)
 {
     num_geoms_=0;
-    texture_tri = 0;
+    //
 
 }
 
 TrianglePainter::~TrianglePainter() {
   vao_.destroy();
   vbo_.destroy();
-  delete texture_tri;
+
 }
 
 void TrianglePainter::Setup() {
@@ -29,14 +29,24 @@ void TrianglePainter::Setup() {
   shader_program_.link();
   shader_program_.bind();
 
-  texture_tri = new QOpenGLTexture(QImage("D:/scene_dense_mesh_texture.png").mirrored());
-  texture_tri->setMinificationFilter(QOpenGLTexture::Nearest);
+//  texture_tri = new QOpenGLTexture(QImage("D:/scene_dense_mesh_texture.png").mirrored());
 
 
-  texture_tri->setMagnificationFilter(QOpenGLTexture::Linear);
+////  if(texture_tri = NULL)
+////  {
+////      qDebug("error read image,please check path!");
+////      return false;
+////  }
+
+// texture_tri->setMinificationFilter(QOpenGLTexture::Nearest);
 
 
-  texture_tri->setWrapMode(QOpenGLTexture::Repeat);
+// texture_tri->setMagnificationFilter(QOpenGLTexture::Linear);
+
+
+// texture_tri->setWrapMode(QOpenGLTexture::Repeat);
+
+
 
 
   vao_.create();
@@ -93,10 +103,11 @@ void TrianglePainter::Render(const QMatrix4x4& pmv_matrix) {
     return;
   }
 qDebug()<<"sanjiaomianpian";
-    texture_tri->bind();
+
 
   shader_program_.bind();
   vao_.bind();
+ // texture_tri->bind();
 
 
 

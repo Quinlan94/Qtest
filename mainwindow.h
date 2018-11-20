@@ -16,6 +16,7 @@ public:
     ~MainWindow();
     void Import();
     void GrabMovies();
+    void Reset();
 
 
     void StringTrim(std::string* str);
@@ -30,7 +31,8 @@ private:
    QMenu *file_menu;
 
    QAction* action_project_new_;
-   QAction* action_project_open_;
+   QAction* action_grab_movie_;
+   QAction* action_reset_;
 
 
 

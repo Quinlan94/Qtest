@@ -57,81 +57,6 @@ void FrameBufferToQImage(QImage& image) {
   image = image.mirrored();
 }
 
-/*
-void BuildImageModel(const Image& image, const Camera& camera,
-                     const float image_size, const float r, const float g,
-                     const float b, const float a, LinePainter::Data& line1,
-                     LinePainter::Data& line2, LinePainter::Data& line3,
-                     LinePainter::Data& line4, LinePainter::Data& line5,
-                     LinePainter::Data& line6, LinePainter::Data& line7,
-                     LinePainter::Data& line8, TrianglePainter::Data& triangle1,
-                     TrianglePainter::Data& triangle2) {
-  // Generate camera dimensions in OpenGL (world) coordinate space
-  const float image_width = image_size * camera.Width() / 1024.0f;
-  const float image_height =
-      image_width * static_cast<float>(camera.Height()) / camera.Width();
-  const float image_extent = std::max(image_width, image_height);
-  const float camera_extent = std::max(camera.Width(), camera.Height());
-  const float camera_extent_world =
-      static_cast<float>(camera.ImageToWorldThreshold(camera_extent));
-  const float focal_length = 2.0f * image_extent / camera_extent_world;
-
-  const Eigen::Matrix<float, 3, 4> inv_proj_matrix =
-      image.InverseProjectionMatrix().cast<float>();
-
-  // Projection center, top-left, top-right, bottom-right, bottom-left corners
-
-  const Eigen::Vector3f pc = inv_proj_matrix.rightCols<1>();
-  const Eigen::Vector3f tl =
-      inv_proj_matrix *
-      Eigen::Vector4f(-image_width, image_height, focal_length, 1);
-  const Eigen::Vector3f tr =
-      inv_proj_matrix *
-      Eigen::Vector4f(image_width, image_height, focal_length, 1);
-  const Eigen::Vector3f br =
-      inv_proj_matrix *
-      Eigen::Vector4f(image_width, -image_height, focal_length, 1);
-  const Eigen::Vector3f bl =
-      inv_proj_matrix *
-      Eigen::Vector4f(-image_width, -image_height, focal_length, 1);
-
-  // Lines from sensor corners to projection center
-
-  line1.point1 = PointPainter::Data(pc(0), pc(1), pc(2), 0.8f * r, g, b, 1);
-  line1.point2 = PointPainter::Data(tl(0), tl(1), tl(2), 0.8f * r, g, b, 1);
-
-  line2.point1 = PointPainter::Data(pc(0), pc(1), pc(2), 0.8f * r, g, b, 1);
-  line2.point2 = PointPainter::Data(tr(0), tr(1), tr(2), 0.8f * r, g, b, 1);
-
-  line3.point1 = PointPainter::Data(pc(0), pc(1), pc(2), 0.8f * r, g, b, 1);
-  line3.point2 = PointPainter::Data(br(0), br(1), br(2), 0.8f * r, g, b, 1);
-
-  line4.point1 = PointPainter::Data(pc(0), pc(1), pc(2), 0.8f * r, g, b, 1);
-  line4.point2 = PointPainter::Data(bl(0), bl(1), bl(2), 0.8f * r, g, b, 1);
-
-  line5.point1 = PointPainter::Data(tl(0), tl(1), tl(2), 0.8f * r, g, b, 1);
-  line5.point2 = PointPainter::Data(tr(0), tr(1), tr(2), 0.8f * r, g, b, 1);
-
-  line6.point1 = PointPainter::Data(tr(0), tr(1), tr(2), 0.8f * r, g, b, 1);
-  line6.point2 = PointPainter::Data(br(0), br(1), br(2), 0.8f * r, g, b, 1);
-
-  line7.point1 = PointPainter::Data(br(0), br(1), br(2), 0.8f * r, g, b, 1);
-  line7.point2 = PointPainter::Data(bl(0), bl(1), bl(2), 0.8f * r, g, b, 1);
-
-  line8.point1 = PointPainter::Data(bl(0), bl(1), bl(2), 0.8f * r, g, b, 1);
-  line8.point2 = PointPainter::Data(tl(0), tl(1), tl(2), 0.8f * r, g, b, 1);
-
-  // Sensor rectangle
-
-  triangle1.point1 = PointPainter::Data(tl(0), tl(1), tl(2), r, g, b, a);
-  triangle1.point2 = PointPainter::Data(tr(0), tr(1), tr(2), r, g, b, a);
-  triangle1.point3 = PointPainter::Data(bl(0), bl(1), bl(2), r, g, b, a);
-
-  triangle2.point1 = PointPainter::Data(bl(0), bl(1), bl(2), r, g, b, a);
-  triangle2.point2 = PointPainter::Data(tr(0), tr(1), tr(2), r, g, b, a);
-  triangle2.point3 = PointPainter::Data(br(0), br(1), br(2), r, g, b, a);
-}
-*/
 
 
 
@@ -141,9 +66,8 @@ mywindow::mywindow(QWidget *parent, QScreen *screen)
     : QWindow(screen),
     focus_distance_(kInitFocusDistance),
     mouse_is_pressed_(false),
-//    selected_image_id_(kInvalidImageId),
-//    selected_point3D_id_(kInvalidPoint3DId),
     coordinate_grid_enabled_(true),
+    movie_grab_enabled_(true),
     near_plane_(kInitNearPlane)
 {
     //setGeometry();
@@ -152,7 +76,7 @@ mywindow::mywindow(QWidget *parent, QScreen *screen)
     bg_color_[2] = 1.0f;
 
     movie_grabber_widget_ = new MovieWidget(parent,this);
-    //texture = 0;
+    texture_tri = 0;
     //setFlags(Qt::Widget);
     SetupGL();
     ResizeGL();
@@ -195,7 +119,8 @@ void mywindow::InitializeGL()
      context_->makeCurrent(this);
      InitializeSettings();
      InitializeView();
-     initTextures();
+     //initTextures();
+
 }
 
 void mywindow::ResizeGL()
@@ -255,16 +180,13 @@ void mywindow::PaintGL()
                     rot_center(2),rot_center(3));
 
      //直接0，0，0，就不行
-
-//printMatrix(model_view_center_matrix);
      model_view_center_matrix.translate(rot_center(0), rot_center(1),
                                         rot_center(2));//不然的话网格和坐标会重合
-//printMatrix(model_view_center_matrix);
      const QMatrix4x4 pmvc_matrix = projection_matrix_ * model_view_center_matrix;
 
 
      // Coordinate system
-     if (coordinate_grid_enabled_) {
+     {
        coordinate_axes_painter_.Render(pmv_matrix, width(), height(), 2);
        coordinate_grid_painter_.Render(pmvc_matrix, width(), height(), 1);
      }
@@ -273,16 +195,13 @@ void mywindow::PaintGL()
      point_painter_.Render(pmv_matrix, point_size_);
      point_connection_painter_.Render(pmv_matrix, width(), height(), 1);
 
-     // Images
-//     image_line_painter_.Render(pmv_matrix, width(), height(), 1);
-//     image_triangle_painter_.Render(pmv_matrix);
-//     image_connection_painter_.Render(pmv_matrix, width(), height(), 1);
 
-     // Movie grabber cameras
-     //texture->bind();
-     //movie_grabber_path_painter_.Render(pmv_matrix, width(), height(), 1.5);
-     //movie_grabber_line_painter_.Render(pmv_matrix, width(), height(), 1);
-     movie_grabber_triangle_painter_.Render(pmv_matrix);
+      if (movie_grab_enabled_)
+      {
+           movie_grabber_triangle_painter_.Render(pmv_matrix);
+      }
+
+
 
      context_->swapBuffers(this);
 }
@@ -290,17 +209,13 @@ void mywindow::PaintGL()
 void mywindow::initTextures()
 {
 
-    //texture = new QOpenGLTexture(QImage("C:/Users/zou/Desktop/openProject/Qtest/scene_dense_mesh_texture.png").mirrored());
+   texture_tri = new QOpenGLTexture(QImage( QString::fromStdString(texture_name)).mirrored());
 
+   texture_tri->setMinificationFilter(QOpenGLTexture::Nearest);
 
-//    if(texture != NULL)
-//        qDebug("success image");
-//    texture->setMinificationFilter(QOpenGLTexture::Nearest);
+   texture_tri->setMagnificationFilter(QOpenGLTexture::Linear);
 
-
-//    texture->setMagnificationFilter(QOpenGLTexture::Linear);
-
-//       texture->setWrapMode(QOpenGLTexture::Repeat);
+   texture_tri->setWrapMode(QOpenGLTexture::Repeat);
 
 }
 
@@ -326,10 +241,14 @@ void mywindow::SetImageSize(const float image_size)
 
 void mywindow::Upload()
 {
-
+QTime time;
+time.start();
     ComposeProjectionMatrix();
     UploadMeshData();
+    qDebug()<<time.elapsed()/1000.0<<"s";
+    texture_tri->bind();
     PaintGL();
+
 }
 
 void mywindow::UploadMeshData()
@@ -364,8 +283,18 @@ void mywindow::UploadMeshData()
 
 
      }
+
      movie_grabber_triangle_painter_.Upload(triangle_data_all);
 
+
+}
+
+void mywindow::Clear()
+{
+    //TrianglePainter initial;
+
+    movie_grab_enabled_ = !movie_grab_enabled_;
+    //movie_grabber_triangle_painter_ = initial;
 
 }
 
@@ -728,30 +657,6 @@ void mywindow::UploadCoordinateGridData()
      coordinate_axes_painter_.Upload(axes_data);
 
 
-//     std::vector<TrianglePainter::Data> triangle_data_all;
-//     //qDebug()<<"_Vertices.size()"<<_Vertices.size();
-//     //for(int i =0;i<2;i++)
-//     {
-//         TrianglePainter::Data triangle,triangle_1;
-//         triangle.point1 = PointPainter::Data(-0.5,-0.5,-0.5,0,0,0,0,0.5);
-//         triangle.point2 = PointPainter::Data(0.5,-0.5,-0.5,0,0,0,0.33,0.5);
-//         triangle.point3 = PointPainter::Data(0.5,0.5,-0.5,0,0,0,0.33,1);
-
-//         triangle_1.point1 = PointPainter::Data(0.5,0.5,-0.5,0,0,0,0.33,1);
-//         triangle_1.point2 = PointPainter::Data(-0.5,0.5,-0.5,0,0,0,0,1);
-//         triangle_1.point3 = PointPainter::Data(-0.5,-0.5,-0.5,0,0,0,0,0.5);
-
-
-
-////         triangle.point2 = PointPainter::Data(_Points[_Vertices[i](1)](0)  , _Points[_Vertices[i](1)](1), _Points[_Vertices[i](1)](2), GRID_RGBA);
-////         triangle.point3 = PointPainter::Data(_Points[_Vertices[i](2)](0)  , _Points[_Vertices[i](2)](1), _Points[_Vertices[i](2)](2), GRID_RGBA);
-//         triangle_data_all.push_back(triangle);
-//          triangle_data_all.push_back(triangle_1);
-
-
-//     }
-//     movie_grabber_triangle_painter_.Upload(triangle_data_all);
-
 }
 
 
@@ -761,92 +666,12 @@ void mywindow::UploadCoordinateGridData()
 
 void mywindow::UploadImageData(const bool selection_mode)
 {
-//    std::vector<LinePainter::Data> line_data;
-//      line_data.reserve(8 * reg_image_ids.size());
-
-//      std::vector<TrianglePainter::Data> triangle_data;
-//      triangle_data.reserve(2 * reg_image_ids.size());
 
 }
 
 void mywindow::UploadMovieGrabberData()
 {
-    /*
-    std::vector<LinePainter::Data> path_data;
-      path_data.reserve(movie_grabber_widget_->views.size());
 
-      std::vector<LinePainter::Data> line_data;
-      line_data.reserve(4 * movie_grabber_widget_->views.size());
-
-      std::vector<TrianglePainter::Data> triangle_data;
-      triangle_data.reserve(2 * movie_grabber_widget_->views.size());
-
-      if (movie_grabber_widget_->views.size() > 0) {
-        const Image& image0 = movie_grabber_widget_->views[0];
-        Eigen::Vector3f prev_proj_center = image0.ProjectionCenter().cast<float>();
-
-        for (size_t i = 1; i < movie_grabber_widget_->views.size(); ++i) {
-          const Image& image = movie_grabber_widget_->views[i];
-          const Eigen::Vector3f curr_proj_center =
-              image.ProjectionCenter().cast<float>();
-          LinePainter::Data path;
-          path.point1 = PointPainter::Data(prev_proj_center(0), prev_proj_center(1),
-                                           prev_proj_center(2), 0, 1, 1, 0.8);
-          path.point2 = PointPainter::Data(curr_proj_center(0), curr_proj_center(1),
-                                           curr_proj_center(2), 0, 1, 1, 0.8);
-          path_data.push_back(path);
-          prev_proj_center = curr_proj_center;
-        }
-
-        // Setup dummy camera with same settings as current OpenGL viewpoint.
-        const size_t kDefaultImageWdith = 2048;
-        const size_t kDefaultImageHeight = 1536;
-        const double focal_length =
-            -2 * tan(DegToRad(kFieldOfView) / 2.0) * kDefaultImageWdith;
-//        Camera camera;
-//        camera.InitializeWithId(SimplePinholeCameraModel::model_id, focal_length,
-//                                kDefaultImageWdith, kDefaultImageHeight);
-
-        // Build all camera models
-        for (size_t i = 0; i < movie_grabber_widget_->views.size(); ++i) {
-          const Image& image = movie_grabber_widget_->views[i];
-          float r, g, b, a;
-          if (i == selected_movie_grabber_view_) {
-            r = IMAGE_SELECTED_R;
-            g = IMAGE_SELECTED_G;
-            b = IMAGE_SELECTED_B;
-            a = 1;
-          } else {
-            r = 0;
-            g = 1;
-            b = 1;
-            a = IMAGE_A;
-          }
-
-          LinePainter::Data line1, line2, line3, line4, line5, line6, line7, line8;
-          TrianglePainter::Data triangle1, triangle2;
-//          BuildImageModel(image, camera, image_size_, r, g, b, a, line1, line2,
-//                          line3, line4, line5, line6, line7, line8, triangle1,
-//                          triangle2);
-
-          line_data.push_back(line1);
-          line_data.push_back(line2);
-          line_data.push_back(line3);
-          line_data.push_back(line4);
-          line_data.push_back(line5);
-          line_data.push_back(line6);
-          line_data.push_back(line7);
-          line_data.push_back(line8);
-
-          triangle_data.push_back(triangle1);
-          triangle_data.push_back(triangle2);
-        }
-      }
-
-      movie_grabber_path_painter_.Upload(path_data);
-      movie_grabber_line_painter_.Upload(line_data);
-      movie_grabber_triangle_painter_.Upload(triangle_data);
-      */
 }
 
 void mywindow::UpdateMovieGrabber()
@@ -858,17 +683,9 @@ void mywindow::UpdateMovieGrabber()
 void mywindow::ComposeProjectionMatrix()
 {
     projection_matrix_.setToIdentity();
-//      if (options_->render->projection_type ==
-//          RenderOptions::ProjectionType::PERSPECTIVE) {
-        projection_matrix_.perspective(kFieldOfView, AspectRatio(), near_plane_,
+
+    projection_matrix_.perspective(kFieldOfView, AspectRatio(), near_plane_,
                                        kFarPlane);
-//      } else if (options_->render->projection_type ==
-//                 RenderOptions::ProjectionType::ORTHOGRAPHIC) {
-//        const float extent = OrthographicWindowExtent();
-//        projection_matrix_.ortho(-AspectRatio() * extent, AspectRatio() * extent,
-//                                 -extent, extent, near_plane_, kFarPlane);
-      //}
-        //}
 }
 
 float mywindow::ZoomScale() const

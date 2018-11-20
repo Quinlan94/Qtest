@@ -6,6 +6,9 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
+#include <QTime>
+
+
 #include <boost/algorithm/string.hpp>
 #include <QOpenGLFunctions>
 #include <QOpenGLShaderProgram>
@@ -35,6 +38,11 @@ public:
     std::vector<Eigen::Vector6f> _Points;
     std::vector<Eigen::Vector3i> _Vertices;
     std::vector<Eigen::Vector6f> _Textures;
+
+    std::string texture_name;
+    QOpenGLTexture *texture_tri;
+
+
 
 
     const float kInitNearPlane = 1.0f;
@@ -94,7 +102,7 @@ public:
        QMatrix4x4 ModelViewMatrix() const;
 
 
-    //QOpenGLTexture *texture;
+
 
 //    EIGEN_STL_UMAP(colmap::camera_t, colmap::Camera) cameras;
 //    EIGEN_STL_UMAP(colmap::image_t, colmap::Image) images;
@@ -122,6 +130,7 @@ private:
 
 
     bool coordinate_grid_enabled_;
+    bool movie_grab_enabled_;
 
     void InitializePainters();
     void InitializeSettings();
