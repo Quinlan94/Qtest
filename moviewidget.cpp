@@ -1,57 +1,8 @@
 ﻿#include "moviewidget.h"
-#include "mywindow.h"  //前置声明，在实现文件中也要包含该头文件
+#include "mywindow.h" //前置声明，在实现文件中也要包含该头文件
 
-template <typename T>
-T Sigmoid(const T x, const T alpha) {
-  return T(1) / (T(1) + exp(-x * alpha));
-}
 
-template <typename T>
-T ScaleSigmoid(T x, const T alpha, const T x0) {
-  const T t0 = Sigmoid(-x0, alpha);
-  const T t1 = Sigmoid(x0, alpha);
-  x = (Sigmoid(2 * x0 * x - x0, alpha) - t0) / (t1 - t0);
-  return x;
-}
-Eigen::Vector3d ProjectionCenterFromMatrix(
-    const Eigen::Matrix3x4d& proj_matrix) {
-  return -proj_matrix.leftCols<3>().transpose() * proj_matrix.rightCols<1>();
-}
-Eigen::Vector4d NormalizeQuaternion(const Eigen::Vector4d& qvec) {
-  const double norm = qvec.norm();
-  if (norm == 0) {
-    // We do not just use (1, 0, 0, 0) because that is a constant and when used
-    // for automatic differentiation that would lead to a zero derivative.
-    return Eigen::Vector4d(1.0, qvec(1), qvec(2), qvec(3));
-  } else {
-    const double inv_norm = 1.0 / norm;
-    return inv_norm * qvec;
-  }
-}
-QMatrix4x4 EigenToQMatrix(const Eigen::Matrix4f& matrix) {
-  QMatrix4x4 qt;
-  for (size_t r = 0; r < 4; ++r) {
-    for (size_t c = 0; c < 4; ++c) {
-      qt(r, c) = matrix(r, c);
-    }
-  }
-  return qt;
-}
 
-Eigen::Matrix4f QMatrixToEigen(const QMatrix4x4& matrix) {
-  Eigen::Matrix4f eigen;
-  for (size_t r = 0; r < 4; ++r) {
-    for (size_t c = 0; c < 4; ++c) {
-      eigen(r, c) = matrix(r, c);
-    }
-  }
-  return eigen;
-}
-
-Eigen::Vector4d RotationMatrixToQuaternion(const Eigen::Matrix3d& rot_mat) {
-  const Eigen::Quaterniond quat(rot_mat);
-  return Eigen::Vector4d(quat.w(), quat.x(), quat.y(), quat.z());
-}
 
 MovieWidget::MovieWidget(QWidget* parent, mywindow* opengl_window)
     :QWidget(parent), opengl_window_(opengl_window)
@@ -100,7 +51,7 @@ MovieWidget::MovieWidget(QWidget* parent, mywindow* opengl_window)
       frame_rate_sb_->setMinimum(1);
       frame_rate_sb_->setMaximum(1000);
       frame_rate_sb_->setSingleStep(1);
-      frame_rate_sb_->setValue(100);
+      frame_rate_sb_->setValue(50);
       grid->addWidget(frame_rate_sb_, 2, 2);
 
       grid->addWidget(new QLabel(tr("Smooth transition"), this), 3, 1);
@@ -149,7 +100,7 @@ void MovieWidget::Add()
       table_->setItem(table_->rowCount() - 1, 0, item);
       table_->selectRow(table_->rowCount() - 1);
 
-      // Zoom out a little, so that we can see the newly added camera
+
       opengl_window_->ChangeFocusDistance(-5);
 }
 
@@ -254,11 +205,7 @@ void MovieWidget::Assemble() {
       opengl_window_->SetModelViewMatrix(
           EigenToQMatrix(frame_model_view_matrix.cast<float>()));
 
-      // Set point and image sizes.
-//      opengl_window_->SetPointSize(prev_view_data.point_size +
-//                                   dpoint_size * tt);
-//      opengl_window_->SetImageSize(prev_view_data.image_size +
-//                                   dimage_size * tt);
+
 
       QImage image = opengl_window_->GrabImage();
       image.save(dir.filePath(
@@ -270,10 +217,7 @@ void MovieWidget::Assemble() {
     prev_tvec = curr_tvec;
   }
 
-  //views = views_cached;
-  opengl_window_->SetPointSize(point_size_cached);
-  opengl_window_->SetImageSize(image_size_cached);
-  //opengl_window_->UpdateMovieGrabber();
+
   opengl_window_->EnableCoordinateGrid();
   opengl_window_->SetModelViewMatrix(model_view_matrix_cached);
 }
@@ -306,44 +250,4 @@ void MovieWidget::UpdateViews() {
 //    image.Tvec() = model_view_matrix.block<3, 1>(0, 3);
 //    views.push_back(image);
 //  }
-}
-
-void InterpolatePose(const Eigen::Vector4d &qvec1, const Eigen::Vector3d &tvec1, const Eigen::Vector4d &qvec2, const Eigen::Vector3d &tvec2, const double t, Eigen::Vector4d *qveci, Eigen::Vector3d *tveci)
-{
-    const Eigen::Vector4d normalized_qvec1 = NormalizeQuaternion(qvec1);
-      const Eigen::Vector4d normalized_qvec2 = NormalizeQuaternion(qvec2);
-      const Eigen::Quaterniond quat1(normalized_qvec1(0), normalized_qvec1(1),
-                                     normalized_qvec1(2), normalized_qvec1(3));
-      const Eigen::Quaterniond quat2(normalized_qvec2(0), normalized_qvec2(1),
-                                     normalized_qvec2(2), normalized_qvec2(3));
-      const Eigen::Vector3d tvec12 = tvec2 - tvec1;
-
-      const Eigen::Quaterniond quati = quat1.slerp(t, quat2);
-
-      *qveci = Eigen::Vector4d(quati.w(), quati.x(), quati.y(), quati.z());
-      *tveci = tvec1 + tvec12 * t;
-}
-
-Eigen::Matrix3x4d InvertProjectionMatrix(const Eigen::Matrix3x4d &proj_matrix)
-{
-    Eigen::Matrix3x4d inv_proj_matrix;
-    inv_proj_matrix.leftCols<3>() = proj_matrix.leftCols<3>().transpose();
-    inv_proj_matrix.rightCols<1>() = ProjectionCenterFromMatrix(proj_matrix);
-    return inv_proj_matrix;
-}
-
-Eigen::Matrix3x4d ComposeProjectionMatrix(const Eigen::Vector4d &qvec, const Eigen::Vector3d &tvec)
-{
-     Eigen::Matrix3x4d proj_matrix;
-     proj_matrix.leftCols<3>() = QuaternionToRotationMatrix(qvec);
-     proj_matrix.rightCols<1>() = tvec;
-     return proj_matrix;
-}
-
-Eigen::Matrix3d QuaternionToRotationMatrix(const Eigen::Vector4d &qvec)
-{
-    const Eigen::Vector4d normalized_qvec = NormalizeQuaternion(qvec);
-    const Eigen::Quaterniond quat(normalized_qvec(0), normalized_qvec(1),
-                                  normalized_qvec(2), normalized_qvec(3));
-    return quat.toRotationMatrix();
 }

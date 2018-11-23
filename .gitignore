@@ -3,3 +3,5 @@
 Eigen/
 release/
 boost/
+*.png
+debug/

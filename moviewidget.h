@@ -1,12 +1,6 @@
 ﻿#ifndef MOVIEWIDGET_H
 #define MOVIEWIDGET_H
 
-#include <initializer_list>
-#include <memory>
-#include <vector>
-
-
-
 
 #include <QtCore>
 #include <QtGui>
@@ -16,8 +10,10 @@
 #include <Eigen/Geometry>
 #include <Eigen/StdVector>
 
-
 #include <unordered_map>
+
+
+
 
 //#include "mywindow.h"
 
@@ -25,11 +21,7 @@
 
 
 
-namespace Eigen {
 
-typedef Eigen::Matrix<double, 3, 4> Matrix3x4d;
-
-}
 
 class mywindow;
 
@@ -85,28 +77,5 @@ private:
 
 };
 
-template <typename T>
-T Sigmoid(const T x, const T alpha = 1);
-
-// Scale values according to sigmoid transform.
-//
-//   x \in [0, 1] -> x \in [-x0, x0] -> sigmoid(x, alpha) -> x \in [0, 1]
-//
-// @param x        Value to be scaled in the range [0, 1].
-// @param x0       Spread that determines the range x is scaled to.
-// @param alpha    Exponential sigmoid factor.
-//
-// @return         The scaled value in the range [0, 1].
-template <typename T>
-T ScaleSigmoid(T x, const T alpha = 1, const T x0 = 10);
-
-void InterpolatePose(const Eigen::Vector4d& qvec1, const Eigen::Vector3d& tvec1,
-                     const Eigen::Vector4d& qvec2, const Eigen::Vector3d& tvec2,
-                     const double t, Eigen::Vector4d* qveci,
-                     Eigen::Vector3d* tveci);
-Eigen::Matrix3x4d InvertProjectionMatrix(const Eigen::Matrix3x4d& proj_matrix);
-Eigen::Matrix3x4d ComposeProjectionMatrix(const Eigen::Vector4d& qvec,
-                                          const Eigen::Vector3d& tvec);
-Eigen::Matrix3d QuaternionToRotationMatrix(const Eigen::Vector4d& qvec);
 
 #endif // MOVIEWIDGET_H

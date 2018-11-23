@@ -3,16 +3,17 @@
 #pragma execution_character_set("utf-8")
 #include <QWindow>
 #include <QtOpenGL>
+
+#include <QTime>
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
-#include <QTime>
-
-
 #include <boost/algorithm/string.hpp>
+
 #include <QOpenGLFunctions>
 #include <QOpenGLShaderProgram>
 #include <QOpenGLBuffer>
+
 
 #include "moviewidget.h"
 
@@ -20,32 +21,38 @@
 #include "pointpainter.h"
 #include "trianglepainter.h"
 
-#include <unordered_map>
+
+#include "glmath.h"
+#include "lightcontrol.h"
 
 
+//namespace Eigen {
 
-namespace Eigen {
+//    typedef Eigen::Matrix<float,6,1> Vector6f;
+//    typedef Eigen::Matrix<double, 3, 4> Matrix3x4d;
+//}
 
-    typedef Eigen::Matrix<float,6,1> Vector6f;
-}
 
 
 class mywindow : public QWindow
 {
 public:
     mywindow(QWidget* parent,QScreen* screen = 0);
+    ~mywindow();
 
     std::vector<Eigen::Vector6f> _Points;
     std::vector<Eigen::Vector3i> _Vertices;
     std::vector<Eigen::Vector6f> _Textures;
 
-    std::string texture_name;
-    QOpenGLTexture *texture_tri;
+    std::vector<QString> texture_names;
+    std::vector<QOpenGLTexture*> texture_tri;
+    size_t *num_texures;
 
 
 
 
-    const float kInitNearPlane = 1.0f;
+
+      const float kInitNearPlane = 1.0f;
       const float kMinNearPlane = 1e-3f;
       const float kMaxNearPlane = 1e5f;
       const float kNearPlaneScaleSpeed = 0.02f;
@@ -76,9 +83,6 @@ public:
     float PointSize() const;
     float ImageSize() const;
 
-    void SetPointSize(const float point_size);
-    void SetImageSize(const float image_size);
-
     void Update();
     void Upload();
     void UploadMeshData();
@@ -96,6 +100,7 @@ public:
 
       QImage GrabImage();
       void GrabMovies();
+      void LightContro();
 
       void EnableCoordinateGrid();
       void DisableCoordinateGrid();
@@ -104,29 +109,18 @@ public:
 
 
 
-//    EIGEN_STL_UMAP(colmap::camera_t, colmap::Camera) cameras;
-//    EIGEN_STL_UMAP(colmap::image_t, colmap::Image) images;
-//    EIGEN_STL_UMAP(colmap::point3D_t, colmap::Point3D) points3D;
-//    std::unordered_map<camera_t, Camera, std::hash<camera_t>,
-//    std::equal_to<camera_t>,Eigen::aligned_allocator<std::pair<camera_t const, Camera>>> cameras;
-
-//    std::unordered_map<image_t, Image, std::hash<image_t>,
-//    std::equal_to<image_t>,Eigen::aligned_allocator<std::pair<image_t const, Image>>> images;
-
-//    std::unordered_map<point3D_t, Point3D, std::hash<point3D_t>,
-//    std::equal_to<point3D_t>,Eigen::aligned_allocator<std::pair<point3D_t const, Point3D>>> points3D;
-
 protected:
     void exposeEvent(QExposeEvent *);
 
 
-    Eigen::Matrix4f QMatrixToEigen(const QMatrix4x4& matrix);
+
 
 
 private:
     QOpenGLContext* context_;
 
     MovieWidget* movie_grabber_widget_;
+    LightControl* light_control_widget;
 
 
     bool coordinate_grid_enabled_;
@@ -143,7 +137,7 @@ private:
 
 
 
-    void SelectObject(const int x, const int y);
+
 
 
     void RotateView(const float x, const float y, const float prev_x,
@@ -151,16 +145,13 @@ private:
     void TranslateView(const float x, const float y, const float prev_x,
                          const float prev_y);
 
-    void ResetView();
-
 
 
     void UploadCoordinateGridData();
-    void UploadPointData(const bool selection_mode = false);
-    void UploadPointConnectionData();
+
     void UploadImageData(const bool selection_mode = false);
-    void UploadImageConnectionData();
-    void UploadMovieGrabberData();
+
+
 
 
 
@@ -185,22 +176,20 @@ private:
     // Size of image models (not dynamic): requires re-uploading of image models.
     float image_size_;
     // Near clipping plane.
-     float near_plane_;
+    float near_plane_;
 
 
     float bg_color_[3];
     std::vector<std::pair<size_t, char>> selection_buffer_;
 
 
-//     image_t selected_image_id_;
-//     point3D_t selected_point3D_id_;
-     //std::vector<image_t> reg_image_ids;
 
      size_t selected_movie_grabber_view_;
 
 
 
     QMatrix4x4 model_view_matrix_;
+    QMatrix3x3 normal_matrix_;
     QMatrix4x4 projection_matrix_;
 
     LinePainter coordinate_axes_painter_;
@@ -209,12 +198,7 @@ private:
     PointPainter point_painter_;
     LinePainter point_connection_painter_;
 
-    LinePainter image_line_painter_;
-    TrianglePainter image_triangle_painter_;
-    LinePainter image_connection_painter_;
 
-    LinePainter movie_grabber_path_painter_;
-    LinePainter movie_grabber_line_painter_;
     TrianglePainter movie_grabber_triangle_painter_;
 };
 

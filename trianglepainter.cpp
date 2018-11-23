@@ -4,7 +4,8 @@
 TrianglePainter::TrianglePainter(): num_geoms_(0)
 {
     num_geoms_=0;
-    //
+    texture =0;
+    tex =0;
 
 }
 
@@ -98,11 +99,32 @@ void TrianglePainter::Upload(const std::vector<TrianglePainter::Data>& data) {
 #endif
 }
 
-void TrianglePainter::Render(const QMatrix4x4& pmv_matrix) {
+void TrianglePainter::Render(const QMatrix4x4& pmv_matrix, std::vector<QOpenGLTexture *> texture_tri, size_t *num_tex_index) {
   if (num_geoms_ == 0) {
     return;
   }
-qDebug()<<"sanjiaomianpian";
+
+  QVector4D mat_specular(1.0, 1.0, 1.0, 1.0);  //镜面反射参数
+  GLfloat mat_shininess[] = { 50.0 };               //高光指数
+  QVector4D light_position(1.0, 1.0, 1.0, 0.0 );
+  QVector4D white_light( 1.0, 1.0, 1.0, 1.0 );   //灯位置(1,1,1), 最后1-开关
+  QVector4D Light_Model_Ambient(0.2, 0.2, 0.2, 1.0); //环境光参数
+  QVector4D diffuseMaterial(0.5, 0.5, 0.5, 1.0 );
+
+
+  glShadeModel(GL_SMOOTH);
+/*  glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+  glMaterialfv(GL_FRONT, GL_AMBIENT, mat_shininess);
+  glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_shininess);
+
+          //灯光设置
+  glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+  glLightfv(GL_LIGHT0, GL_DIFFUSE, white_light);   //散射光属性
+  glLightfv(GL_LIGHT0, GL_SPECULAR, white_light);  //镜面反射光
+  glLightModelfv(GL_LIGHT_MODEL_AMBIENT, Light_Model_Ambient);  *///环境光参数
+
+  glEnable(GL_LIGHTING);   //开关:使用光
+  glEnable(GL_LIGHT0);     //打开0#灯
 
 
   shader_program_.bind();
@@ -111,10 +133,28 @@ qDebug()<<"sanjiaomianpian";
 
 
 
+
   shader_program_.setUniformValue("u_pmv_matrix", pmv_matrix);
+  shader_program_.setUniformValue("tri_mv_matrix_", tri_mv_matrix_);
+  shader_program_.setUniformValue("normal_matrix_", normal_matrix_);
+  shader_program_.setUniformValue("vLightPosition", light_position);
+  shader_program_.setUniformValue("ambientColor", Light_Model_Ambient);
+  shader_program_.setUniformValue("diffuseColor", diffuseMaterial);
+  shader_program_.setUniformValue("specularColor", mat_specular);
+
   shader_program_.setUniformValue("texture_tri", 0);
 
-  glDrawArrays(GL_TRIANGLES, 0, (GLsizei)(3 * num_geoms_));
+  tex = num_tex_index;
+  size_t draw_size =0;
+  for(int i =0;i<texture_tri.size();i++)
+  {
+      texture = texture_tri[i];
+      texture->bind();
+      glDrawArrays(GL_TRIANGLES, (GLsizei)(draw_size), (GLsizei)(3 * tex[i]));
+      draw_size+= tex[i]*3;
+  }
+
+
 
 
 

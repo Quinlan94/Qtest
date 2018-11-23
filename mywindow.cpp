@@ -1,21 +1,9 @@
 ﻿#include "mywindow.h"
 #include <QDebug>
 #include <iostream>
-//#include <gl/glut.h>
 
-#define POINT_SELECTED_R 0
-#define POINT_SELECTED_G 1
-#define POINT_SELECTED_B 0
-#define IMAGE_R 1
-#define IMAGE_G 0.1
-#define IMAGE_B 0
-#define IMAGE_A 0.6
-#define IMAGE_SELECTED_R 1
-#define IMAGE_SELECTED_G 0
-#define IMAGE_SELECTED_B 1
-#define IMAGE_SELECTED_A 0.6
-#define SELECTION_BUFFER_IMAGE 0
-#define SELECTION_BUFFER_POINT 1
+
+
 
 #define GRID_RGBA 0.2, 0.2, 0.2, 1
 #define X_AXIS_RGBA 0.9, 0, 0, 0.5
@@ -58,10 +46,6 @@ void FrameBufferToQImage(QImage& image) {
 }
 
 
-
-
-
-
 mywindow::mywindow(QWidget *parent, QScreen *screen)
     : QWindow(screen),
     focus_distance_(kInitFocusDistance),
@@ -70,16 +54,24 @@ mywindow::mywindow(QWidget *parent, QScreen *screen)
     movie_grab_enabled_(true),
     near_plane_(kInitNearPlane)
 {
-    //setGeometry();
+
     bg_color_[0] = 1.0f;
     bg_color_[1] = 1.0f;
     bg_color_[2] = 1.0f;
 
     movie_grabber_widget_ = new MovieWidget(parent,this);
-    texture_tri = 0;
-    //setFlags(Qt::Widget);
+    light_control_widget = new LightControl(parent,this);
+
+    num_texures =0;
+
     SetupGL();
     ResizeGL();
+
+}
+
+mywindow::~mywindow()
+{
+    texture_tri.clear();
 
 }
 
@@ -104,7 +96,7 @@ void mywindow::SetupGL()
       context_ = new QOpenGLContext(this);
       context_->setFormat(format);
       context_->create();
-      //CHECK(context_->create());
+
 
       InitializeGL();
       InitializePainters();
@@ -119,14 +111,13 @@ void mywindow::InitializeGL()
      context_->makeCurrent(this);
      InitializeSettings();
      InitializeView();
-     //initTextures();
+
 
 }
 
 void mywindow::ResizeGL()
 {
-//    qDebug()<<width();
-//    qDebug()<<height();
+
      context_->makeCurrent(this);
      glViewport(0, 0, width(), height());
      ComposeProjectionMatrix();
@@ -135,41 +126,27 @@ void mywindow::ResizeGL()
 
 void mywindow::PaintGL()
 {
-    //qDebug()<<isExposed();
+
     if (!isExposed()) {
        return;
      }
-    qDebug()<<focus_distance_;
 
      context_->makeCurrent(this);
 
      glClearColor(bg_color_[0], bg_color_[1], bg_color_[2], 1.0f);
      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-     GLfloat mat_specular[] = { 1.0, 1.0, 1.0, 1.0 };  //镜面反射参数
-     GLfloat mat_shininess[] = { 50.0 };               //高光指数
-     GLfloat light_position[] = { 1.0, 1.0, 1.0, 0.0 };
-     GLfloat white_light[] = { 1.0, 1.0, 1.0, 1.0 };   //灯位置(1,1,1), 最后1-开关
-     GLfloat Light_Model_Ambient[] = { 0.2, 0.2, 0.2, 1.0 }; //环境光参数
-
-//     glShadeModel(GL_SMOOTH);
-//     glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
-//             glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
-
-//             //灯光设置
-//             glLightfv(GL_LIGHT0, GL_POSITION, light_position);
-//             glLightfv(GL_LIGHT0, GL_DIFFUSE, white_light);   //散射光属性
-//             glLightfv(GL_LIGHT0, GL_SPECULAR, white_light);  //镜面反射光
-//             glLightModelfv(GL_LIGHT_MODEL_AMBIENT, Light_Model_Ambient);  //环境光参数
-
-//             glEnable(GL_LIGHTING);   //开关:使用光
-//             glEnable(GL_LIGHT0);     //打开0#灯
 
 
 
 
+//应用于法线向量的变换矩阵是顶点变换矩阵的逆转置矩阵
      const QMatrix4x4 pmv_matrix = projection_matrix_ * model_view_matrix_;
+     movie_grabber_triangle_painter_.tri_mv_matrix_ = model_view_matrix_;
+    Eigen::Matrix3f nor_matrix = QMatrixToEigen(model_view_matrix_).topLeftCorner(3,3).inverse().transpose();//.topl.inverse().transpose();
 
-     // Model view matrix for center of view
+     movie_grabber_triangle_painter_.normal_matrix_ = EigenToQMatrix3(nor_matrix);
+    //QMatrix4x4 normal_matrix_ = model_view_matrix_;
+
      QMatrix4x4 model_view_center_matrix = model_view_matrix_;
      //不加逆的话那个grid坐标 会很奇怪
      const Eigen::Vector4f rot_center =
@@ -185,20 +162,20 @@ void mywindow::PaintGL()
      const QMatrix4x4 pmvc_matrix = projection_matrix_ * model_view_center_matrix;
 
 
-     // Coordinate system
+
      {
        coordinate_axes_painter_.Render(pmv_matrix, width(), height(), 2);
        coordinate_grid_painter_.Render(pmvc_matrix, width(), height(), 1);
      }
 
-     // Point cloud
+
      point_painter_.Render(pmv_matrix, point_size_);
      point_connection_painter_.Render(pmv_matrix, width(), height(), 1);
 
 
       if (movie_grab_enabled_)
       {
-           movie_grabber_triangle_painter_.Render(pmv_matrix);
+           movie_grabber_triangle_painter_.Render(pmv_matrix,texture_tri,num_texures);
       }
 
 
@@ -209,13 +186,25 @@ void mywindow::PaintGL()
 void mywindow::initTextures()
 {
 
-   texture_tri = new QOpenGLTexture(QImage( QString::fromStdString(texture_name)).mirrored());
+    QOpenGLTexture *temp_texture;
 
-   texture_tri->setMinificationFilter(QOpenGLTexture::Nearest);
 
-   texture_tri->setMagnificationFilter(QOpenGLTexture::Linear);
+   for(int i =0;i< texture_names.size();i++)
+   {
 
-   texture_tri->setWrapMode(QOpenGLTexture::Repeat);
+       temp_texture = new QOpenGLTexture(QImage(texture_names.at(i)).mirrored());
+       qDebug()<<"texture name :"<<texture_names[i];
+       temp_texture->setMinificationFilter(QOpenGLTexture::Nearest);
+
+       temp_texture->setMagnificationFilter(QOpenGLTexture::Linear);
+
+       temp_texture->setWrapMode(QOpenGLTexture::Repeat);
+
+       texture_tri.push_back(temp_texture);
+
+   }
+
+     qDebug()<<"texture initial finished";
 
 }
 
@@ -229,24 +218,15 @@ float mywindow::ImageSize() const
     return image_size_;
 }
 
-void mywindow::SetPointSize(const float point_size)
-{
 
-}
-
-void mywindow::SetImageSize(const float image_size)
-{
-
-}
 
 void mywindow::Upload()
 {
-QTime time;
-time.start();
+
     ComposeProjectionMatrix();
     UploadMeshData();
-    qDebug()<<time.elapsed()/1000.0<<"s";
-    texture_tri->bind();
+
+
     PaintGL();
 
 }
@@ -267,18 +247,16 @@ void mywindow::UploadMeshData()
          triangle.point3 = PointPainter::Data(_Points[_Vertices[i](2)](0)  , _Points[_Vertices[i](2)](1), _Points[_Vertices[i](2)](2),
                  _Points[_Vertices[i](2)](3),_Points[_Vertices[i](2)](4),_Points[_Vertices[i](2)](5), _Textures[i](4),_Textures[i](5));
 
-         if(i==_Vertices.size()-1)
-         {
-             qDebug()<<"point coordinate"<<_Points[_Vertices[i](0)](0)  , _Points[_Vertices[i](0)](1), _Points[_Vertices[i](0)](2);
-             qDebug()<<"list"<<_Vertices[i](0)<<" "<<_Vertices[i](1)
-                                  <<" "<<_Vertices[i](2)<<" "<<_Textures[i](0)<<" "<<_Textures[i](1)<<_Textures[i](2)<<" "<<_Textures[i](3) <<_Textures[i](4)<<" "<<_Textures[i](5);
-             qDebug()<<"triang ..."<<triangle.point1.x<<" "<<triangle.point1.y<<triangle.point1.z<<triangle.point1.tx<<" "<<triangle.point1.ty;
-              qDebug()<<"triang ..."<<triangle.point2.x<<" "<<triangle.point2.y<<triangle.point2.z<<triangle.point2.tx<<" "<<triangle.point2.ty;
-               qDebug()<<"triang ..."<<triangle.point3.x<<" "<<triangle.point3.y<<triangle.point3.z<<triangle.point3.tx<<" "<<triangle.point3.ty;
-         }
+//         if(i==_Vertices.size()-1)
+//         {
+//             qDebug()<<"point coordinate"<<_Points[_Vertices[i](0)](0)  , _Points[_Vertices[i](0)](1), _Points[_Vertices[i](0)](2);
+//             qDebug()<<"list"<<_Vertices[i](0)<<" "<<_Vertices[i](1)
+//                                  <<" "<<_Vertices[i](2)<<" "<<_Textures[i](0)<<" "<<_Textures[i](1)<<_Textures[i](2)<<" "<<_Textures[i](3) <<_Textures[i](4)<<" "<<_Textures[i](5);
+//             qDebug()<<"triang ..."<<triangle.point1.x<<" "<<triangle.point1.y<<triangle.point1.z<<triangle.point1.tx<<" "<<triangle.point1.ty;
+//              qDebug()<<"triang ..."<<triangle.point2.x<<" "<<triangle.point2.y<<triangle.point2.z<<triangle.point2.tx<<" "<<triangle.point2.ty;
+//               qDebug()<<"triang ..."<<triangle.point3.x<<" "<<triangle.point3.y<<triangle.point3.z<<triangle.point3.tx<<" "<<triangle.point3.ty;
+//         }
 
-//         triangle.point2 = PointPainter::Data(_Points[_Vertices[i](1)](0)  , _Points[_Vertices[i](1)](1), _Points[_Vertices[i](1)](2), GRID_RGBA);
-//         triangle.point3 = PointPainter::Data(_Points[_Vertices[i](2)](0)  , _Points[_Vertices[i](2)](1), _Points[_Vertices[i](2)](2), GRID_RGBA);
          triangle_data_all.push_back(triangle);
 
 
@@ -291,10 +269,10 @@ void mywindow::UploadMeshData()
 
 void mywindow::Clear()
 {
-    //TrianglePainter initial;
+
 
     movie_grab_enabled_ = !movie_grab_enabled_;
-    //movie_grabber_triangle_painter_ = initial;
+
 
 }
 
@@ -351,6 +329,13 @@ void mywindow::GrabMovies()
     movie_grabber_widget_->show();
 }
 
+void mywindow::LightContro()
+{
+  light_control_widget->show();
+}
+
+
+
 void mywindow::EnableCoordinateGrid()
 {
     coordinate_grid_enabled_ = true;
@@ -372,17 +357,7 @@ void mywindow::exposeEvent(QExposeEvent *event)
         PaintGL();
 }
 
-Eigen::Matrix4f mywindow::QMatrixToEigen(const QMatrix4x4 &matrix)
-{
-    Eigen::Matrix4f eigen;
-      for (size_t r = 0; r < 4; ++r) {
-        for (size_t c = 0; c < 4; ++c) {
-          eigen(r, c) = matrix(r, c);
-        }
-      }
-      //qDebug()<<eigen<<endl;
-      return eigen;
-}
+
 
 void mywindow::InitializePainters()
 {
@@ -392,12 +367,7 @@ void mywindow::InitializePainters()
     point_painter_.Setup();
     point_connection_painter_.Setup();
 
-    image_line_painter_.Setup();
-    image_triangle_painter_.Setup();
-    image_connection_painter_.Setup();
 
-    movie_grabber_path_painter_.Setup();
-    movie_grabber_line_painter_.Setup();
     movie_grabber_triangle_painter_.Setup();
 }
 
@@ -422,8 +392,11 @@ void mywindow::InitializeView()
       focus_distance_ = kInitFocusDistance;
 
       model_view_matrix_.setToIdentity();
-
+      normal_matrix_.setToIdentity();
+       //view矩阵怎么设置的
+      //如果没有调用gluLookAt，照相机就设定一个默认的位置和方向，在默认情况下，照相机位于原点，指向Z轴的负方向，朝上向量为（0，1，0）,为单位矩阵
       model_view_matrix_.translate(0, 0, -focus_distance_);
+
 
       model_view_matrix_.rotate(225, 1, 0, 0);
       model_view_matrix_.rotate(-45, 0, 1, 0);
@@ -535,15 +508,11 @@ void mywindow::ChangeCameraSize(const float delta)
       }
       image_size_ *= (1.0f + delta / 100.0f * kImageScaleSpeed);
       image_size_ = std::max(kMinImageSize, std::min(kMaxImageSize, image_size_));
-//      UploadImageData();
-//      UploadMovieGrabberData();
+
       PaintGL();
 }
 
-void mywindow::SelectObject(const int x, const int y)
-{
 
-}
 
 Eigen::Vector3f mywindow::PositionToArcballVector(const float x, const float y) const
 {
@@ -563,10 +532,6 @@ void mywindow::RotateView(const float x, const float y, const float prev_x, cons
     if (x - prev_x == 0 && y - prev_y == 0) {
         return;
       }
-
-      // Rotation according to the Arcball method "ARCBALL: A User Interface for
-      // Specifying Three-Dimensional Orientation Using a Mouse", Ken Shoemake,
-      // University of Pennsylvania, 1992.
 
       // Determine Arcball vector on unit sphere.
       const Eigen::Vector3f u = PositionToArcballVector(x, y);
@@ -601,15 +566,7 @@ void mywindow::TranslateView(const float x, const float y, const float prev_x, c
       }
 
       Eigen::Vector3f tvec(x - prev_x, prev_y - y, 0.0f);
-
-//      if (options_->render->projection_type ==
-//          RenderOptions::ProjectionType::PERSPECTIVE) {
         tvec *= ZoomScale();
-//      } else if (options_->render->projection_type ==
-//                 RenderOptions::ProjectionType::ORTHOGRAPHIC) {
-//        tvec *= 2.0f * OrthographicWindowExtent() / height();
-//      }
-
       const Eigen::Matrix4f vm_mat = QMatrixToEigen(model_view_matrix_).inverse();
 
       const Eigen::Vector3f tvec_rot = vm_mat.block<3, 3>(0, 0) * tvec;
@@ -622,6 +579,7 @@ QMatrix4x4 mywindow::ModelViewMatrix() const
 {
     return model_view_matrix_;
 }
+
 
 void mywindow::UploadCoordinateGridData()
 {
@@ -660,23 +618,9 @@ void mywindow::UploadCoordinateGridData()
 }
 
 
-
-
-
-
-void mywindow::UploadImageData(const bool selection_mode)
-{
-
-}
-
-void mywindow::UploadMovieGrabberData()
-{
-
-}
-
 void mywindow::UpdateMovieGrabber()
 {
-    UploadMovieGrabberData();
+
     PaintGL();
 }
 

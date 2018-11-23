@@ -25,7 +25,14 @@ public:
 
      void Setup();
      void Upload(const std::vector<TrianglePainter::Data>& data);
-     void Render(const QMatrix4x4& pmv_matrix);
+     void Render(const QMatrix4x4& pmv_matrix, std::vector<QOpenGLTexture*> texture_tri,
+                 size_t *num_tex_index);
+
+      QMatrix4x4 tri_mv_matrix_;
+      QMatrix3x3 normal_matrix_;
+
+      QOpenGLTexture *texture;
+      size_t *tex;
 
 
 

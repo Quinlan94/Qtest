@@ -20,14 +20,18 @@ SOURCES += main.cpp\
     linepainter.cpp \
     pointpainter.cpp \
     trianglepainter.cpp \
-    moviewidget.cpp
+    moviewidget.cpp \
+    glmath.cpp \
+    lightcontrol.cpp
 
 HEADERS  += mainwindow.h \
     mywindow.h \
     linepainter.h \
     pointpainter.h \
     trianglepainter.h \
-    moviewidget.h
+    moviewidget.h \
+    glmath.h \
+    lightcontrol.h
 QT       += opengl
 #不要动不动就说x64和x86冲突，明明编译器垃圾
 #LIBS+=C:\Users\zou\Desktop\openProject\Qtest\glut32.lib

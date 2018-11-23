@@ -33,6 +33,7 @@ private:
    QAction* action_project_new_;
    QAction* action_grab_movie_;
    QAction* action_reset_;
+   QAction* light_control_;
 
 
 

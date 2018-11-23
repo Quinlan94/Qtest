@@ -24,12 +24,19 @@ MainWindow::MainWindow(QWidget *parent)
           action_reset_->setShortcuts(QKeySequence::Delete);
           connect(action_reset_, &QAction::triggered, opengl,
                   &mywindow::Clear);
+      light_control_ =
+                  new QAction(QIcon(":/media/project-open.png"), tr("灯光控制"), this);
+
+              connect(light_control_, &QAction::triggered, opengl,
+                      &mywindow::LightContro);
+
 
        file_menu=menuBar()->addMenu(tr("选项"));
 
        file_menu->addAction(action_project_new_);
        file_menu->addAction(action_grab_movie_);
        file_menu->addAction(action_reset_);
+       file_menu->addAction(light_control_);
 
 
 
@@ -58,14 +65,14 @@ void MainWindow::Import()
               .toUtf8()
               .constData();
 
-    opengl->texture_name = path.substr(0,path.length()-3)+"png";
-    QFileInfo file_exist(QString::fromStdString(opengl->texture_name));
+    QFileInfo file_info(QString::fromStdString(path));
+    QString temp_name = file_info.absolutePath() + "/";
+    qDebug()<<" path"<<temp_name;
 
 
 
-    opengl->initTextures();
 
-      if (path == ""||(!(file_exist.isFile())))
+      if (path == "")
       {
         QMessageBox::warning(NULL, "error", "no such file in dir ", QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
         return;
@@ -73,19 +80,19 @@ void MainWindow::Import()
     std::ifstream file(path, std::ios::binary);
     std::string line;
     bool in_vertex_section = false;
-    bool in_face_section = false;
+
     int X_index = -1;
     int Y_index = -1;
     int Z_index = -1;
     int NX_index = -1;
     int NY_index = -1;
     int NZ_index = -1;
-    int T1_X_index = 6;
-    int T1_Y_index = 7;
-    int T2_X_index = 8;
-    int T2_Y_index = 9;
-    int T3_X_index = 10;
-    int T3_Y_index = 11;
+    int T1_X_index = 5;
+    int T1_Y_index = 6;
+    int T2_X_index = 7;
+    int T2_Y_index = 8;
+    int T3_X_index = 9;
+    int T3_Y_index = 10;
     int R_index = -1;
     int G_index = -1;
     int B_index = -1;
@@ -95,9 +102,12 @@ void MainWindow::Import()
     int R_byte_pos = -1;
     int G_byte_pos = -1;
     int B_byte_pos = -1;
+    int tex_index = 11;
     size_t num_bytes_per_line = 0;
     size_t num_vertices = 0;
     int index = 0;
+
+
 
     QTime time;
     time.start();
@@ -114,6 +124,13 @@ void MainWindow::Import()
     }
      const std::vector<std::string> line_elems = StringSplit(line, " ");
 
+     if(line_elems[0]== "comment"&&line_elems[1]== "TextureFile")
+     {
+         QString tex = temp_name.right(temp_name.length()).append(QString::fromStdString(line_elems[2]));
+
+
+         opengl->texture_names.push_back(tex);
+     }
      if (line_elems.size() >= 3 && line_elems[0] == "element")
      {
           in_vertex_section = false;
@@ -183,6 +200,9 @@ void MainWindow::Import()
   }
    const bool is_rgb_missing = R_index == -1 || G_index == -1 || B_index == -1;
 
+   qDebug()<<" size "<<opengl->texture_names.size();
+   opengl->num_texures = new size_t[opengl->texture_names.size()]();
+
    std::vector<Eigen::Vector6f> Points;
    std::vector<Eigen::Vector3i> vertices;
    std::vector<Eigen::Vector6f> textures;
@@ -192,7 +212,9 @@ void MainWindow::Import()
        const std::vector<std::string> line_elems = StringSplit(line, " ");
        if (line_elems.size() > 8)
        {
-            qDebug()<<"line_elems.size() "<<line_elems.size();
+
+           opengl->num_texures[std::stoi(line_elems.at(tex_index))]++;
+
 
             Eigen::Vector3i vertice;
 
@@ -210,7 +232,7 @@ void MainWindow::Import()
             texture(4) = std::stof(line_elems.at(T3_X_index));
             texture(5) = std::stof(line_elems.at(T3_Y_index));
 
-            qDebug()<<"texture "<<texture(5);
+
 
 
             vertices.push_back(vertice);
@@ -274,8 +296,8 @@ void MainWindow::Import()
          items.push_back(item);
 
        }
-       int i = std::stoi(items.at(0));
 
+        opengl->num_texures[std::stoi(items.at(tex_index))]++;
         Eigen::Vector3i vertice;
         vertice(0) = std::stoi(items.at(1));
         vertice(1) = std::stoi(items.at(2));
@@ -296,9 +318,12 @@ void MainWindow::Import()
 
    }
 qDebug()<<time.elapsed()/1000.0<<"s";
+qDebug()<<" duo shao ge "<<opengl->num_texures[11];
+
 
    opengl->_Vertices = vertices;
    opengl->_Textures = textures;
+   opengl->initTextures();
    opengl->Upload();
 
 
