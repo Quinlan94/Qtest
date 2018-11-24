@@ -51,7 +51,7 @@ MovieWidget::MovieWidget(QWidget* parent, mywindow* opengl_window)
       frame_rate_sb_->setMinimum(1);
       frame_rate_sb_->setMaximum(1000);
       frame_rate_sb_->setSingleStep(1);
-      frame_rate_sb_->setValue(50);
+      frame_rate_sb_->setValue(30);
       grid->addWidget(frame_rate_sb_, 2, 2);
 
       grid->addWidget(new QLabel(tr("Smooth transition"), this), 3, 1);

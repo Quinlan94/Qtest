@@ -143,9 +143,14 @@ void TrianglePainter::Render(const QMatrix4x4& pmv_matrix, std::vector<QOpenGLTe
   shader_program_.setUniformValue("specularColor", mat_specular);
 
   shader_program_.setUniformValue("texture_tri", 0);
-
+  qDebug()<<"num_tex_index"<<num_geoms_;
   tex = num_tex_index;
+  if(num_tex_index[0]==0)
+      tex[0]=num_geoms_;
+
   size_t draw_size =0;
+  qDebug()<<"render: "<<tex[0];
+
   for(int i =0;i<texture_tri.size();i++)
   {
       texture = texture_tri[i];

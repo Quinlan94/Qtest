@@ -140,17 +140,17 @@ void mywindow::PaintGL()
 
 
 //应用于法线向量的变换矩阵是顶点变换矩阵的逆转置矩阵
-     const QMatrix4x4 pmv_matrix = projection_matrix_ * model_view_matrix_;
-     movie_grabber_triangle_painter_.tri_mv_matrix_ = model_view_matrix_;
-    Eigen::Matrix3f nor_matrix = QMatrixToEigen(model_view_matrix_).topLeftCorner(3,3).inverse().transpose();//.topl.inverse().transpose();
+     const QMatrix4x4 pmv_matrix = projection_matrix_ * model_matrix_;
+     movie_grabber_triangle_painter_.tri_mv_matrix_ = model_matrix_;
+    Eigen::Matrix3f nor_matrix = QMatrixToEigen(model_matrix_).topLeftCorner(3,3).inverse().transpose();//.topl.inverse().transpose();
 
      movie_grabber_triangle_painter_.normal_matrix_ = EigenToQMatrix3(nor_matrix);
     //QMatrix4x4 normal_matrix_ = model_view_matrix_;
 
-     QMatrix4x4 model_view_center_matrix = model_view_matrix_;
+     QMatrix4x4 model_view_center_matrix = model_matrix_;
      //不加逆的话那个grid坐标 会很奇怪
      const Eigen::Vector4f rot_center =
-         QMatrixToEigen(model_view_matrix_).inverse() *
+         QMatrixToEigen(model_matrix_).inverse() *
          Eigen::Vector4f(0, 0, -focus_distance_, 1);//限制x,y移动，z随坐标变化，可同时改变z坐标轴有变化，网格没裱花
 
      QVector4D vec3(rot_center(0), rot_center(1),
@@ -302,7 +302,7 @@ void mywindow::printMatrix(QMatrix4x4 matrix)
 
 void mywindow::SetModelViewMatrix(const QMatrix4x4 &matrix)
 {
-    model_view_matrix_ = matrix;
+    model_matrix_ = matrix;
     PaintGL();
 }
 
@@ -391,15 +391,15 @@ void mywindow::InitializeView()
       image_size_ = kInitImageSize;
       focus_distance_ = kInitFocusDistance;
 
-      model_view_matrix_.setToIdentity();
+      model_matrix_.setToIdentity();
       normal_matrix_.setToIdentity();
+      view_matrix_.setToIdentity();
        //view矩阵怎么设置的
       //如果没有调用gluLookAt，照相机就设定一个默认的位置和方向，在默认情况下，照相机位于原点，指向Z轴的负方向，朝上向量为（0，1，0）,为单位矩阵
-      model_view_matrix_.translate(0, 0, -focus_distance_);
+      model_matrix_.translate(0, 0, -focus_distance_);
 
 
-      model_view_matrix_.rotate(225, 1, 0, 0);
-      model_view_matrix_.rotate(-45, 0, 1, 0);
+
 }
 
 void mywindow::mousePressEvent(QMouseEvent *event)
@@ -470,10 +470,10 @@ void mywindow::ChangeFocusDistance(const float delta)
         focus_distance_ = kMaxFocusDistance;
         diff = prev_focus_distance - focus_distance_;
       }
-      const Eigen::Matrix4f vm_mat = QMatrixToEigen(model_view_matrix_).inverse();
+      const Eigen::Matrix4f vm_mat = QMatrixToEigen(model_matrix_).inverse();
       const Eigen::Vector3f tvec(0, 0, diff);
       const Eigen::Vector3f tvec_rot = vm_mat.block<3, 3>(0, 0) * tvec;
-      model_view_matrix_.translate(tvec_rot(0), tvec_rot(1), tvec_rot(2));
+      model_matrix_.translate(tvec_rot(0), tvec_rot(1), tvec_rot(2));
       ComposeProjectionMatrix();
       UploadCoordinateGridData();
       PaintGL();
@@ -542,7 +542,7 @@ void mywindow::RotateView(const float x, const float y, const float prev_x, cons
 
       const float kMinAngle = 1e-3f;
       if (angle > kMinAngle) {
-        const Eigen::Matrix4f vm_mat = QMatrixToEigen(model_view_matrix_).inverse();
+        const Eigen::Matrix4f vm_mat = QMatrixToEigen(model_matrix_).inverse();
 
         // Rotation axis.
         Eigen::Vector3f axis = vm_mat.block<3, 3>(0, 0) * v.cross(u);
@@ -551,9 +551,9 @@ void mywindow::RotateView(const float x, const float y, const float prev_x, cons
         const Eigen::Vector4f rot_center =
             vm_mat * Eigen::Vector4f(0, 0, -focus_distance_, 1);
         // First shift to rotation center, then rotate and shift back.
-        model_view_matrix_.translate(rot_center(0), rot_center(1), rot_center(2));
-        model_view_matrix_.rotate(angle*57.3, axis(0), axis(1), axis(2));
-        model_view_matrix_.translate(-rot_center(0), -rot_center(1),
+        model_matrix_.translate(rot_center(0), rot_center(1), rot_center(2));
+        model_matrix_.rotate(angle*57.3, axis(0), axis(1), axis(2));
+        model_matrix_.translate(-rot_center(0), -rot_center(1),
                                      -rot_center(2));
         PaintGL();
         }
@@ -567,17 +567,17 @@ void mywindow::TranslateView(const float x, const float y, const float prev_x, c
 
       Eigen::Vector3f tvec(x - prev_x, prev_y - y, 0.0f);
         tvec *= ZoomScale();
-      const Eigen::Matrix4f vm_mat = QMatrixToEigen(model_view_matrix_).inverse();
+      const Eigen::Matrix4f vm_mat = QMatrixToEigen(model_matrix_).inverse();
 
       const Eigen::Vector3f tvec_rot = vm_mat.block<3, 3>(0, 0) * tvec;
-      model_view_matrix_.translate(tvec_rot(0), tvec_rot(1), tvec_rot(2));
+      model_matrix_.translate(tvec_rot(0), tvec_rot(1), tvec_rot(2));
 
       PaintGL();
 }
 
 QMatrix4x4 mywindow::ModelViewMatrix() const
 {
-    return model_view_matrix_;
+    return model_matrix_;
 }
 
 

@@ -10,18 +10,18 @@ MainWindow::MainWindow(QWidget *parent)
 
       action_project_new_ =
           new QAction(QIcon(":/media/project-new.png"), tr("导入文件"), this);
-      action_project_new_->setShortcuts(QKeySequence::New);
+
       connect(action_project_new_, &QAction::triggered, this,
               &MainWindow::Import);
 
       action_grab_movie_ =
           new QAction(QIcon(":/media/project-open.png"), tr("抓取动画"), this);
-      action_grab_movie_->setShortcuts(QKeySequence::Open);
+
       connect(action_grab_movie_, &QAction::triggered, opengl,
               &mywindow::GrabMovies);
       action_reset_ =
               new QAction(QIcon(":/media/project-open.png"), tr("显示开关"), this);
-          action_reset_->setShortcuts(QKeySequence::Delete);
+
           connect(action_reset_, &QAction::triggered, opengl,
                   &mywindow::Clear);
       light_control_ =
@@ -165,34 +165,10 @@ void MainWindow::Import()
          } else if (line == "property float nz") {
            NZ_index = index;
            //Z_byte_pos = num_bytes_per_line;
-         } else if (line == "property uchar r" || line == "property uchar red" ||
-                  line == "property uchar diffuse_red" ||
-                  line == "property uchar ambient_red" ||
-                  line == "property uchar specular_red") {
-         R_index = index;
-         R_byte_pos = num_bytes_per_line;
-       } else if (line == "property uchar g" || line == "property uchar green" ||
-                  line == "property uchar diffuse_green" ||
-                  line == "property uchar ambient_green" ||
-                  line == "property uchar specular_green") {
-         G_index = index;
-         G_byte_pos = num_bytes_per_line;
-       } else if (line == "property uchar b" || line == "property uchar blue" ||
-                  line == "property uchar diffuse_blue" ||
-                  line == "property uchar ambient_blue" ||
-                  line == "property uchar specular_blue") {
-         B_index = index;
-         B_byte_pos = num_bytes_per_line;
-       }
+         }
 
        index += 1;
-       if (line_elems[1] == "float") {
-         num_bytes_per_line += 4;
-       } else if (line_elems[1] == "uchar") {
-         num_bytes_per_line += 1;
-       } else {
 
-       }
      }
 
 
@@ -212,8 +188,8 @@ void MainWindow::Import()
        const std::vector<std::string> line_elems = StringSplit(line, " ");
        if (line_elems.size() > 8)
        {
-
-           opengl->num_texures[std::stoi(line_elems.at(tex_index))]++;
+           if(opengl->texture_names.size()!=1)
+              opengl->num_texures[std::stoi(line_elems.at(tex_index))]++;
 
 
             Eigen::Vector3i vertice;
@@ -297,7 +273,8 @@ void MainWindow::Import()
 
        }
 
-        opengl->num_texures[std::stoi(items.at(tex_index))]++;
+        if(opengl->texture_names.size()!=1)
+          opengl->num_texures[std::stoi(items.at(tex_index))]++;
         Eigen::Vector3i vertice;
         vertice(0) = std::stoi(items.at(1));
         vertice(1) = std::stoi(items.at(2));

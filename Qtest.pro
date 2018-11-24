@@ -33,11 +33,9 @@ HEADERS  += mainwindow.h \
     glmath.h \
     lightcontrol.h
 QT       += opengl
-#不要动不动就说x64和x86冲突，明明编译器垃圾
+
 #LIBS+=C:\Users\zou\Desktop\openProject\Qtest\glut32.lib
-LIBS+=C:\Users\Administrator\Desktop\Github\Qtest\freeglutd.lib
-#LIBS+=D:\local\boost_1_60_0\lib64-msvc-14.0\libboost_filesystem-vc140-mt-gd-1_60.lib
-#LIBS+=D:\local\boost_1_60_0\lib64-msvc-14.0\libboost_system-vc140-mt-gd-1_60.lib
+LIBS+=./freeglutd.lib
 
 RESOURCES += \
     shader.qrc

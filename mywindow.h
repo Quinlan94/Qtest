@@ -188,8 +188,9 @@ private:
 
 
 
-    QMatrix4x4 model_view_matrix_;
+    QMatrix4x4 model_matrix_;
     QMatrix3x3 normal_matrix_;
+    QMatrix4x4 view_matrix_;
     QMatrix4x4 projection_matrix_;
 
     LinePainter coordinate_axes_painter_;
