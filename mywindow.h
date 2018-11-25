@@ -57,7 +57,7 @@ public:
       const float kMaxNearPlane = 1e5f;
       const float kNearPlaneScaleSpeed = 0.02f;
       const float kFarPlane = 1e5f;
-      const float kInitFocusDistance = 100.0f;
+      const float kInitFocusDistance = 20.0f;
       const float kMinFocusDistance = 1e-5f;
       const float kMaxFocusDistance = 1e8f;
       const float kFieldOfView = 25.0f;
@@ -71,6 +71,10 @@ public:
       const float kMaxImageSize = 1e3f;
       const float kImageScaleSpeed = 0.1f;
       const int kDoubleClickInterval = 250;
+
+      QVector3D view_foward;
+      QVector3D view_up;
+      QVector3D view_epos;
 
 
     void SetupGL();
@@ -95,8 +99,9 @@ public:
 
     void printMatrix(QMatrix4x4 matrix);
     void printMatrix(Eigen::Matrix4f matrix);
-     void SetModelViewMatrix(const QMatrix4x4& matrix);
-     void UpdateMovieGrabber();
+    void SetModelMatrix(const QMatrix4x4& matrix);
+    void SetViewMatrix(const QMatrix4x4& matrix);
+    void UpdateMovieGrabber();
 
       QImage GrabImage();
       void GrabMovies();

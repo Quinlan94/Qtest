@@ -28,7 +28,8 @@ public:
      void Render(const QMatrix4x4& pmv_matrix, std::vector<QOpenGLTexture*> texture_tri,
                  size_t *num_tex_index);
 
-      QMatrix4x4 tri_mv_matrix_;
+      QMatrix4x4 tri_model_matrix_;
+      QMatrix4x4 tri_view_matrix_;
       QMatrix3x3 normal_matrix_;
 
       QOpenGLTexture *texture;

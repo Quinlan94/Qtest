@@ -98,6 +98,9 @@ void mywindow::SetupGL()
       context_->create();
 
 
+      view_up = QVector3D(0,1,0);
+      view_foward = QVector3D(0,0,-1);
+      view_epos = QVector3D(0,0,0);
       InitializeGL();
       InitializePainters();
 
@@ -140,15 +143,16 @@ void mywindow::PaintGL()
 
 
 //应用于法线向量的变换矩阵是顶点变换矩阵的逆转置矩阵
-     const QMatrix4x4 pmv_matrix = projection_matrix_ * model_matrix_;
-     movie_grabber_triangle_painter_.tri_mv_matrix_ = model_matrix_;
+     const QMatrix4x4 pmv_matrix = projection_matrix_ *view_matrix_* model_matrix_;
+     movie_grabber_triangle_painter_.tri_model_matrix_ = model_matrix_;
+      movie_grabber_triangle_painter_.tri_view_matrix_ = view_matrix_;
     Eigen::Matrix3f nor_matrix = QMatrixToEigen(model_matrix_).topLeftCorner(3,3).inverse().transpose();//.topl.inverse().transpose();
 
      movie_grabber_triangle_painter_.normal_matrix_ = EigenToQMatrix3(nor_matrix);
-    //QMatrix4x4 normal_matrix_ = model_view_matrix_;
+
 
      QMatrix4x4 model_view_center_matrix = model_matrix_;
-     //不加逆的话那个grid坐标 会很奇怪
+
      const Eigen::Vector4f rot_center =
          QMatrixToEigen(model_matrix_).inverse() *
          Eigen::Vector4f(0, 0, -focus_distance_, 1);//限制x,y移动，z随坐标变化，可同时改变z坐标轴有变化，网格没裱花
@@ -300,9 +304,15 @@ void mywindow::printMatrix(QMatrix4x4 matrix)
     cout<<"====================="<<endl;
 }
 
-void mywindow::SetModelViewMatrix(const QMatrix4x4 &matrix)
+void mywindow::SetModelMatrix(const QMatrix4x4 &matrix)
 {
     model_matrix_ = matrix;
+    PaintGL();
+}
+
+void mywindow::SetViewMatrix(const QMatrix4x4 &matrix)
+{
+    view_matrix_ = matrix;
     PaintGL();
 }
 
@@ -331,7 +341,7 @@ void mywindow::GrabMovies()
 
 void mywindow::LightContro()
 {
-  light_control_widget->show();
+    light_control_widget->show();
 }
 
 
@@ -393,10 +403,15 @@ void mywindow::InitializeView()
 
       model_matrix_.setToIdentity();
       normal_matrix_.setToIdentity();
-      view_matrix_.setToIdentity();
+
+      view_matrix_.lookAt(view_epos,view_foward,view_up);
+      qDebug()<<" view matrix: "<<view_matrix_;
        //view矩阵怎么设置的
       //如果没有调用gluLookAt，照相机就设定一个默认的位置和方向，在默认情况下，照相机位于原点，指向Z轴的负方向，朝上向量为（0，1，0）,为单位矩阵
-      model_matrix_.translate(0, 0, -focus_distance_);
+//      model_matrix_.translate(0, 0, -focus_distance_);
+
+//      model_matrix_.rotate(225, 1, 0, 0);
+//      model_matrix_.rotate(-45, 0, 1, 0);
 
 
 
@@ -461,7 +476,7 @@ void mywindow::ChangeFocusDistance(const float delta)
         return;
       }
       const float prev_focus_distance = focus_distance_;
-      float diff = delta * ZoomScale() * kFocusSpeed;
+      float diff = 0.5*delta * ZoomScale() * kFocusSpeed;
       focus_distance_ -= diff;
       if (focus_distance_ < kMinFocusDistance) {
         focus_distance_ = kMinFocusDistance;
@@ -474,6 +489,7 @@ void mywindow::ChangeFocusDistance(const float delta)
       const Eigen::Vector3f tvec(0, 0, diff);
       const Eigen::Vector3f tvec_rot = vm_mat.block<3, 3>(0, 0) * tvec;
       model_matrix_.translate(tvec_rot(0), tvec_rot(1), tvec_rot(2));
+     qDebug()<<"model matrix : "<< model_matrix_;
       ComposeProjectionMatrix();
       UploadCoordinateGridData();
       PaintGL();
@@ -541,20 +557,37 @@ void mywindow::RotateView(const float x, const float y, const float prev_x, cons
       const float angle = 2.0f * std::acos(std::min(1.0f, u.dot(v)));
 
       const float kMinAngle = 1e-3f;
+      const Eigen::Matrix4f v_matrix = QMatrixToEigen(view_matrix_);
       if (angle > kMinAngle) {
         const Eigen::Matrix4f vm_mat = QMatrixToEigen(model_matrix_).inverse();
+        const Eigen::Matrix4f v_mat = v_matrix.inverse();
+         QMatrix4x4 q_v_mat = EigenToQMatrix(v_mat);
 
         // Rotation axis.
         Eigen::Vector3f axis = vm_mat.block<3, 3>(0, 0) * v.cross(u);
+        Eigen::Vector3f view_axis = v_matrix.block<3, 3>(0, 0) * v.cross(u);
         axis = axis.normalized();
+        qDebug()<<"axis"<<view_matrix_;
+        view_axis = view_axis.normalized();
+        qDebug()<<"axis"<<" "<<view_axis(0)<<" "<<view_axis(1)<<" "<<view_axis(2);
         // Center of rotation is current focus.
         const Eigen::Vector4f rot_center =
             vm_mat * Eigen::Vector4f(0, 0, -focus_distance_, 1);
+        const Eigen::Vector4f eye_center =
+            v_matrix * Eigen::Vector4f( view_epos.x(),view_epos.y(),view_epos.z(), 1);
+
+        q_v_mat.translate(eye_center(0), eye_center(1), eye_center(2));
+        q_v_mat.rotate(-angle*57.3, view_axis(0), view_axis(1), view_axis(2));
+        q_v_mat.translate(-eye_center(0), -eye_center(1),-eye_center(2));
+        view_matrix_ = q_v_mat.inverted();
+        qDebug()<<" view_pos"<<view_epos;
+        qDebug()<<" view_matrix"<<view_matrix_;
+        qDebug()<<" center"<<eye_center(0)<<" "<<eye_center(1)<<" "<<eye_center(2);
         // First shift to rotation center, then rotate and shift back.
-        model_matrix_.translate(rot_center(0), rot_center(1), rot_center(2));
-        model_matrix_.rotate(angle*57.3, axis(0), axis(1), axis(2));
-        model_matrix_.translate(-rot_center(0), -rot_center(1),
-                                     -rot_center(2));
+//        model_matrix_.translate(rot_center(0), rot_center(1), rot_center(2));//这句鸡肋啊，不就是模型坐标的原点吗
+//        model_matrix_.rotate(angle*57.3, axis(0), axis(1), axis(2));
+//        model_matrix_.translate(-rot_center(0), -rot_center(1),
+//                                     -rot_center(2));
         PaintGL();
         }
 }
@@ -568,9 +601,9 @@ void mywindow::TranslateView(const float x, const float y, const float prev_x, c
       Eigen::Vector3f tvec(x - prev_x, prev_y - y, 0.0f);
         tvec *= ZoomScale();
       const Eigen::Matrix4f vm_mat = QMatrixToEigen(model_matrix_).inverse();
-
+//无非是世界坐标和模型坐标的相互变换，在世界坐标的变化量，转移到模型坐标中
       const Eigen::Vector3f tvec_rot = vm_mat.block<3, 3>(0, 0) * tvec;
-      model_matrix_.translate(tvec_rot(0), tvec_rot(1), tvec_rot(2));
+      //model_matrix_.translate(tvec_rot(0), tvec_rot(1), tvec_rot(2));
 
       PaintGL();
 }
@@ -583,8 +616,8 @@ QMatrix4x4 mywindow::ModelViewMatrix() const
 
 void mywindow::UploadCoordinateGridData()
 {
-    const float scale = ZoomScale();
-    qDebug()<<scale;
+     float scale = ZoomScale();
+     scale = 0.5;
 
      // View center grid
      std::vector<LinePainter::Data> grid_data(3);
@@ -598,7 +631,7 @@ void mywindow::UploadCoordinateGridData()
      grid_data[2].point1 = PointPainter::Data(0, 0, -20 * scale, GRID_RGBA);
      grid_data[2].point2 = PointPainter::Data(0, 0, 20 * scale, GRID_RGBA);
 
-     coordinate_grid_painter_.Upload(grid_data);
+     //coordinate_grid_painter_.Upload(grid_data);
 
      // Coordinate axes
      std::vector<LinePainter::Data> axes_data(3);
@@ -612,7 +645,7 @@ void mywindow::UploadCoordinateGridData()
      axes_data[2].point1 = PointPainter::Data(0, 0, 0, Z_AXIS_RGBA);
      axes_data[2].point2 = PointPainter::Data(0, 0, 50 * scale, Z_AXIS_RGBA);
 
-     coordinate_axes_painter_.Upload(axes_data);
+     //coordinate_axes_painter_.Upload(axes_data);
 
 
 }

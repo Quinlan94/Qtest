@@ -3,7 +3,8 @@
 
 uniform mat4 u_pmv_matrix;
 
-uniform mat4 tri_mv_matrix_;
+uniform mat4 tri_model_matrix_;
+uniform mat4 tri_view_matrix_;
 uniform mat3 normal_matrix_;
 uniform vec3 vLightPosition;
 
@@ -24,10 +25,10 @@ void main(void)
  
 
  
- gl_Position = u_pmv_matrix * vec4(a_position, 1);
+  gl_Position = u_pmv_matrix * vec4(a_position, 1);
   v_normal = normal_matrix_ * a_normal;
 
-  vec4 vPosition4 = tri_mv_matrix_ * vec4(a_position, 1);
+  vec4 vPosition4 = tri_view_matrix_ * tri_model_matrix_ * vec4(a_position, 1);
 
   vec3 vPosition3 = vPosition4.xyz / vPosition4.w;
 

@@ -202,7 +202,7 @@ void MovieWidget::Assemble() {
       frame_model_view_matrix.topLeftCorner<3, 4>() = InvertProjectionMatrix(
           ComposeProjectionMatrix(interp_qvec, interp_tvec));
 
-      opengl_window_->SetModelViewMatrix(
+      opengl_window_->SetModelMatrix(
           EigenToQMatrix(frame_model_view_matrix.cast<float>()));
 
 
@@ -219,7 +219,7 @@ void MovieWidget::Assemble() {
 
 
   opengl_window_->EnableCoordinateGrid();
-  opengl_window_->SetModelViewMatrix(model_view_matrix_cached);
+  opengl_window_->SetModelMatrix(model_view_matrix_cached);
 }
 
 void MovieWidget::TimeChanged(QTableWidgetItem* item) {

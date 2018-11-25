@@ -135,7 +135,8 @@ void TrianglePainter::Render(const QMatrix4x4& pmv_matrix, std::vector<QOpenGLTe
 
 
   shader_program_.setUniformValue("u_pmv_matrix", pmv_matrix);
-  shader_program_.setUniformValue("tri_mv_matrix_", tri_mv_matrix_);
+  shader_program_.setUniformValue("tri_mv_matrix_", tri_model_matrix_);
+  shader_program_.setUniformValue("tri_view_matrix_", tri_view_matrix_);
   shader_program_.setUniformValue("normal_matrix_", normal_matrix_);
   shader_program_.setUniformValue("vLightPosition", light_position);
   shader_program_.setUniformValue("ambientColor", Light_Model_Ambient);
@@ -143,7 +144,7 @@ void TrianglePainter::Render(const QMatrix4x4& pmv_matrix, std::vector<QOpenGLTe
   shader_program_.setUniformValue("specularColor", mat_specular);
 
   shader_program_.setUniformValue("texture_tri", 0);
-  qDebug()<<"num_tex_index"<<num_geoms_;
+
   tex = num_tex_index;
   if(num_tex_index[0]==0)
       tex[0]=num_geoms_;
